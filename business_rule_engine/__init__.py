@@ -1,15 +1,23 @@
 from collections import OrderedDict
 import formulas
 
+from typing import (
+    Any,
+    Dict,
+    List,
+    Text,
+    Optional
+)
+
 
 class RuleParser():
 
-    CUSTOM_FUNCTIONS = {}
+    CUSTOM_FUNCTIONS: List[Text] = []
 
     def __init__(self) -> None:
-        self.rules = OrderedDict()
+        self.rules: Dict[Text, Dict[Text, List[Text]]] = OrderedDict()
 
-    def parsestr(self, text):
+    def parsestr(self, text: Text) -> None:
         rulename = None
         is_condition = False
         is_action = False
@@ -42,35 +50,32 @@ class RuleParser():
             if rulename and is_action and not ignore_line:
                 self.rules[rulename]['action'].append(line.strip())
 
-
     @classmethod
-    def register_function(cls, function, function_name=None):
-        if not function_name:
-            function_name = function.__name__.upper()
-        cls.CUSTOM_FUNCTIONS[function_name] = function
-        formulas.get_functions()[function_name] = function
+    def register_function(cls, function: Any, function_name: Optional[Text] = None) -> None:
+        cls.CUSTOM_FUNCTIONS.append(function_name or function.__name__.upper())
+        formulas.get_functions()[function_name or function.__name__.upper()] = function  # type: ignore
 
     @staticmethod
-    def _compile_condition(condition_lines):
+    def _compile_condition(condition_lines: List[Text]) -> Any:
         condition = "".join(condition_lines)
         if not condition.startswith("="):
             condition = "={}".format(condition)
-        return formulas.Parser().ast(condition)[1].compile()
+        return formulas.Parser().ast(condition)[1].compile()  # type: ignore
 
     @staticmethod
-    def get_params(params, condition_compiled):
-        params_dict = {k.upper(): v for k, v in params.items()}
+    def _get_params(params: Dict[Text, Any], condition_compiled: Any) -> Dict[Text, Any]:
+        params_dict: Dict[Text, Any] = {k.upper(): v for k, v in params.items()}
         param_names = set(params_dict.keys())
 
-        condition_args = list(condition_compiled.inputs.keys())
+        condition_args: List[Text] = list(condition_compiled.inputs.keys())
 
         if not set(condition_args).issubset(param_names):
             raise ValueError("Missing arguments")
 
-        params_condition = {k: v for k,v in params_dict.items() if k in condition_args}
+        params_condition = {k: v for k, v in params_dict.items() if k in condition_args}
         return params_condition
 
-    def execute(self, params, stop_on_first_trigger=True):
+    def execute(self, params: Dict[Text, Any], stop_on_first_trigger: bool = True) -> bool:
         rule_was_triggered = False
         for rule_name, rule in self.rules.items():
             print("Rule name: {}".format(rule_name))
@@ -78,14 +83,14 @@ class RuleParser():
             print("Action: {}".format("".join(rule['action'])))
 
             condition_compiled = self._compile_condition(rule['condition'])
-            params_condition = self.get_params(params, condition_compiled)
+            params_condition = self._get_params(params, condition_compiled)
             rvalue_conditions = condition_compiled(**params_condition)
 
             if rvalue_conditions:
                 rule_was_triggered = True
 
                 action_compiled = self._compile_condition(rule['action'])
-                params_actions = self.get_params(params, action_compiled)
+                params_actions = self._get_params(params, action_compiled)
                 rvalue_action = action_compiled(**params_actions)
                 print("rule '{}' executed with result {}".format(rule_name, rvalue_action))
 

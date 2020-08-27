@@ -1,3 +1,4 @@
+import logging
 from collections import OrderedDict
 import formulas
 
@@ -14,8 +15,9 @@ class RuleParser():
 
     CUSTOM_FUNCTIONS: List[Text] = []
 
-    def __init__(self) -> None:
+    def __init__(self, codition_requires_bool: bool = True) -> None:
         self.rules: Dict[Text, Dict[Text, List[Text]]] = OrderedDict()
+        self.codition_requires_bool = codition_requires_bool
 
     def parsestr(self, text: Text) -> None:
         rulename = None
@@ -78,13 +80,15 @@ class RuleParser():
     def execute(self, params: Dict[Text, Any], stop_on_first_trigger: bool = True) -> bool:
         rule_was_triggered = False
         for rule_name, rule in self.rules.items():
-            print("Rule name: {}".format(rule_name))
-            print("Condition: {}".format("".join(rule['condition'])))
-            print("Action: {}".format("".join(rule['action'])))
+            logging.debug("Rule name: %s", rule_name)
+            logging.debug("Condition: %s", "".join(rule['condition']))
+            logging.debug("Action: {}", "".join(rule['action']))
 
             condition_compiled = self._compile_condition(rule['condition'])
             params_condition = self._get_params(params, condition_compiled)
-            rvalue_conditions = condition_compiled(**params_condition)
+            rvalue_conditions = condition_compiled(**params_condition).tolist()
+            if self.codition_requires_bool and not isinstance(rvalue_conditions, bool):
+                raise ValueError('rule: {} - condition does not return a boolean value!'.format(rule_name))
 
             if rvalue_conditions:
                 rule_was_triggered = True
@@ -92,10 +96,10 @@ class RuleParser():
                 action_compiled = self._compile_condition(rule['action'])
                 params_actions = self._get_params(params, action_compiled)
                 rvalue_action = action_compiled(**params_actions)
-                print("rule '{}' executed with result {}".format(rule_name, rvalue_action))
+                logging.debug("rule '%s' executed with result %s", rule_name, rvalue_action)
 
                 if stop_on_first_trigger:
-                    print("Stop on first trigger")
+                    logging.debug("Stop on first trigger")
                     break
-                print("continue")
+                logging.debug("continue with next rule")
         return rule_was_triggered

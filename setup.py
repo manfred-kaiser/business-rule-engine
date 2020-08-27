@@ -10,7 +10,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='business-rule-engine',
-    version='0.0.1',
+    version='0.0.2',
     author='Manfred Kaiser',
     author_email='manfred.kaiser@logfile.at',
     description='Python DSL for setting up business intelligence rules',
@@ -19,10 +19,10 @@ setup(
     keywords="business rules engine",
     python_requires='>= 3.6',
     packages=find_packages(exclude=("tests",)),  # type: ignore
-    url="https://business-rule-engine.readthedocs.io/",
+    url="https://github.com/manfred-kaiser/business-rule-engine",
     project_urls={
-        'Source': 'https://github.com/logfile-at/business-rule-engine',
-        'Tracker': 'https://github.com/logfile-at/business-rule-engine/issues',
+        'Source': 'https://github.com/manfred-kaiser/business-rule-engine',
+        'Tracker': 'https://github.com/manfred-kaiser/business-rule-engine/issues',
     },
     classifiers=[
         "Programming Language :: Python :: 3",

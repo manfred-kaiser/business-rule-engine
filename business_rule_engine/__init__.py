@@ -82,7 +82,7 @@ class RuleParser():
         for rule_name, rule in self.rules.items():
             logging.debug("Rule name: %s", rule_name)
             logging.debug("Condition: %s", "".join(rule['condition']))
-            logging.debug("Action: {}", "".join(rule['action']))
+            logging.debug("Action: %s", "".join(rule['action']))
 
             condition_compiled = self._compile_condition(rule['condition'])
             params_condition = self._get_params(params, condition_compiled)

@@ -59,7 +59,7 @@ parser.execute(params)
 
 ## Supported functions
 
-Business rule engine uses Excel like functions (thanks to [![formulas](https://github.com/vinci1it2000/formulas]. So it is possible to use most of them in rules.
+Business rule engine uses Excel like functions (thanks to [formulas](https://github.com/vinci1it2000/formulas). So it is possible to use most of them in rules.
 
 
 ## Multiple conditions and multiple actions

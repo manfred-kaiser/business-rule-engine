@@ -119,16 +119,6 @@ parser.execute(params)
 
 ```
 
-## Debug
-
-To debug rules been processed, use logging lib.
-
-You can insert in your Python script to log to stdout:
-```
-import logging
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-```
-
 ## Error Handling
 
 Most of the errors are caused by missing parameters, you can handle the errors and interpret the results handling ValueError:
@@ -161,3 +151,12 @@ except ValueError as e:
     print(e)
 ```
 
+## Debug
+
+To debug the rules processing, use the logging lib.
+
+You can insert in your Python script to log to stdout:
+```
+import logging
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+```

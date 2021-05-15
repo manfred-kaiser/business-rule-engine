@@ -72,7 +72,7 @@ class RuleParser():
         condition_args: List[Text] = list(condition_compiled.inputs.keys())
 
         if not set(condition_args).issubset(param_names):
-            raise ValueError("Missing arguments")
+            raise ValueError("Missing arguments {}".format(set(condition_args).difference(param_names)))
 
         params_condition = {k: v for k, v in params_dict.items() if k in condition_args}
         return params_condition

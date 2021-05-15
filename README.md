@@ -27,7 +27,7 @@ params = {
 ### 2. Define custom functions
 
 ```python
-def order_more(items_to_order):
+def order_more(items_to_order, urgent = false):
     print("you ordered {} new items".format(items_to_order))
     return items_to_order
 ```
@@ -59,4 +59,104 @@ parser.execute(params)
 
 ## Supported functions
 
-Business rule engine uses Excel like functions. So it is possible to use most of them in the rules.
+Business rule engine uses Excel like functions (thanks to [formulas](https://github.com/vinci1it2000/formulas). So it is possible to use most of them in rules.
+
+
+## Multiple conditions and multiple actions
+
+You can make multiple checks on the same params, and call multiple actions as needed:
+
+```python
+rules = """
+rule "order new items"
+when
+    AND(products_in_stock < 20,
+    products_in_stock >= 5)
+then
+    order_more(50)
+end
+
+rule "order new items urgent"
+when
+    products_in_stock < 5,
+then
+    AND(order_more(10, true),
+    order_more(50))
+end
+"""
+```
+
+## Custom functions 
+
+You can also write your own functions to validate conditions and use other libraries functions as actions:
+
+```python
+from business_rule_engine import RuleParser
+
+def is_even(num):
+   if (num % 2) == 0:
+      return True
+   return False
+
+params = {
+    'number': 10
+}
+
+rules = """
+rule "check even number"
+when
+    is_even(number) = True
+then
+    print("is even")
+end
+"""
+
+parser = RuleParser()
+parser.register_function(is_even)
+parser.register_function(print)
+parser.parsestr(rules)
+parser.execute(params)
+
+```
+
+## Error Handling
+
+Most of the errors are caused by missing parameters, you can handle the errors and interpret the results handling ValueError:
+
+```python
+from business_rule_engine import RuleParser
+
+# proposital typo 
+params = {
+    'produtcs_in_stock': 30
+}
+
+rules = """
+rule "order new items"
+when
+    products_in_stock < 20
+then
+    order_more(50)
+end
+"""
+
+parser = RuleParser()
+parser.register_function(order_more)
+parser.parsestr(rules)
+try:
+    ret = parser.execute(params)
+    if ret is False:
+        print("No conditions matched")
+except ValueError as e:
+    print(e)
+```
+
+## Debug
+
+To debug the rules processing, use the logging lib.
+
+You can insert in your Python script to log to stdout:
+```
+import logging
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+```

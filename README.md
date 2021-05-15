@@ -129,3 +129,35 @@ import logging
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 ```
 
+## Error Handling
+
+Most of the errors are caused by missing parameters, you can handle the errors and interpret the results handling ValueError:
+
+```python
+from business_rule_engine import RuleParser
+
+# proposital typo 
+params = {
+    'produtcs_in_stock': 30
+}
+
+rules = """
+rule "order new items"
+when
+    products_in_stock < 20
+then
+    order_more(50)
+end
+"""
+
+parser = RuleParser()
+parser.register_function(order_more)
+parser.parsestr(rules)
+try:
+    ret = parser.execute(params)
+    if ret is False:
+        print("No conditions matched")
+except ValueError as e:
+    print(e)
+```
+

@@ -15,9 +15,9 @@ class RuleParser():
 
     CUSTOM_FUNCTIONS: List[Text] = []
 
-    def __init__(self, codition_requires_bool: bool = True) -> None:
+    def __init__(self, condition_requires_bool: bool = True) -> None:
         self.rules: Dict[Text, Dict[Text, List[Text]]] = OrderedDict()
-        self.codition_requires_bool = codition_requires_bool
+        self.condition_requires_bool = condition_requires_bool
 
     def parsestr(self, text: Text) -> None:
         rulename = None
@@ -87,7 +87,7 @@ class RuleParser():
             condition_compiled = self._compile_condition(rule['condition'])
             params_condition = self._get_params(params, condition_compiled)
             rvalue_conditions = condition_compiled(**params_condition).tolist()
-            if self.codition_requires_bool and not isinstance(rvalue_conditions, bool):
+            if self.condition_requires_bool and not isinstance(rvalue_conditions, bool):
                 raise ValueError('rule: {} - condition does not return a boolean value!'.format(rule_name))
 
             if rvalue_conditions:

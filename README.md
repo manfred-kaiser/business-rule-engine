@@ -27,7 +27,7 @@ params = {
 ### 2. Define custom functions
 
 ```python
-def order_more(items_to_order, urgent = false):
+def order_more(items_to_order):
     print("you ordered {} new items".format(items_to_order))
     return items_to_order
 ```
@@ -86,7 +86,7 @@ end
 """
 ```
 
-## Custom functions 
+## Custom functions
 
 You can also write your own functions to validate conditions and use other libraries functions as actions:
 
@@ -119,6 +119,33 @@ parser.execute(params)
 
 ```
 
+## Handle missing rule parameters
+
+If some argruments are missing, the rule engine will raise a ValueError.
+
+There are some use cases, when you have to work with incomplete data. In such cases, you can define
+default arguments.
+
+You enable default rule arguments with the parameter `set_defaule_arg`. The default argument will have the Value `None`. To provide another value you can use `default_arg`.
+
+```python
+params = {}
+
+rules = """
+rule "order new items"
+when
+    products_in_stock < 20
+then
+    order_more(50)
+end
+"""
+
+parser = RuleParser()
+parser.register_function(order_more)
+parser.parsestr(rules)
+parser.execute(params, set_default_arg=True, default_arg=0)
+```
+
 ## Error Handling
 
 Most of the errors are caused by missing parameters, you can handle the errors and interpret the results handling ValueError:
@@ -126,7 +153,7 @@ Most of the errors are caused by missing parameters, you can handle the errors a
 ```python
 from business_rule_engine import RuleParser
 
-# proposital typo 
+# proposital typo
 params = {
     'produtcs_in_stock': 30
 }

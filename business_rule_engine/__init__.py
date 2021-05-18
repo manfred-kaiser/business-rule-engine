@@ -65,19 +65,31 @@ class RuleParser():
         return formulas.Parser().ast(condition)[1].compile()  # type: ignore
 
     @staticmethod
-    def _get_params(params: Dict[Text, Any], condition_compiled: Any) -> Dict[Text, Any]:
+    def _get_params(params: Dict[Text, Any], condition_compiled: Any, set_default_arg: bool = False, default_arg: Optional[Any] = None) -> Dict[Text, Any]:
         params_dict: Dict[Text, Any] = {k.upper(): v for k, v in params.items()}
         param_names = set(params_dict.keys())
 
         condition_args: List[Text] = list(condition_compiled.inputs.keys())
 
         if not set(condition_args).issubset(param_names):
-            raise ValueError("Missing arguments {}".format(set(condition_args).difference(param_names)))
+            missing_args = set(condition_args).difference(param_names)
+            if not set_default_arg:
+                raise ValueError("Missing arguments {}".format(missing_args))
+
+            for missing_arg in missing_args:
+                params_dict[missing_arg] = default_arg
 
         params_condition = {k: v for k, v in params_dict.items() if k in condition_args}
         return params_condition
 
-    def execute(self, params: Dict[Text, Any], stop_on_first_trigger: bool = True) -> bool:
+    def execute(
+        self,
+        params: Dict[Text, Any],
+        stop_on_first_trigger: bool = True,
+        *,
+        set_default_arg: bool = False,
+        default_arg: Optional[Any] = None
+    ) -> bool:
         rule_was_triggered = False
         for rule_name, rule in self.rules.items():
             logging.debug("Rule name: %s", rule_name)
@@ -85,7 +97,7 @@ class RuleParser():
             logging.debug("Action: %s", "".join(rule['action']))
 
             condition_compiled = self._compile_condition(rule['condition'])
-            params_condition = self._get_params(params, condition_compiled)
+            params_condition = self._get_params(params, condition_compiled, set_default_arg, default_arg)
             rvalue_conditions = condition_compiled(**params_condition).tolist()
             if self.codition_requires_bool and not isinstance(rvalue_conditions, bool):
                 raise ValueError('rule: {} - condition does not return a boolean value!'.format(rule_name))
@@ -94,7 +106,7 @@ class RuleParser():
                 rule_was_triggered = True
 
                 action_compiled = self._compile_condition(rule['action'])
-                params_actions = self._get_params(params, action_compiled)
+                params_actions = self._get_params(params, action_compiled, set_default_arg, default_arg)
                 rvalue_action = action_compiled(**params_actions)
                 logging.debug("rule '%s' executed with result %s", rule_name, rvalue_action)
 

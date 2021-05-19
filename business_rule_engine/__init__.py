@@ -20,8 +20,8 @@ from business_rule_engine.exceptions import (
 
 class Rule():
 
-    def __init__(self, rulename, codition_requires_bool: bool = True) -> None:
-        self.codition_requires_bool = codition_requires_bool
+    def __init__(self, rulename, condition_requires_bool: bool = True) -> None:
+        self.condition_requires_bool = condition_requires_bool
         self.rulename: Text = rulename
         self.conditions: List[Text] = []
         self.actions: List[Text] = []
@@ -78,9 +78,9 @@ class RuleParser():
 
     CUSTOM_FUNCTIONS: List[Text] = []
 
-    def __init__(self, codition_requires_bool: bool = True) -> None:
+    def __init__(self, condition_requires_bool: bool = True) -> None:
         self.rules: Dict[Text, Rule] = OrderedDict()
-        self.codition_requires_bool = codition_requires_bool
+        self.condition_requires_bool = condition_requires_bool
 
     def parsestr(self, text: Text) -> None:
         rulename = None

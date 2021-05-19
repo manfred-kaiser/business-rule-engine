@@ -11,7 +11,11 @@ from typing import (
     Optional
 )
 
-from business_rule_engine.exceptions import DuplicateRuleName
+from business_rule_engine.exceptions import (
+    DuplicateRuleName,
+    MissingArgumentError,
+    ConditionReturnValueError
+)
 
 
 class Rule():
@@ -40,7 +44,7 @@ class Rule():
         if not set(condition_args).issubset(param_names):
             missing_args = set(condition_args).difference(param_names)
             if not set_default_arg:
-                raise ValueError("Missing arguments {}".format(missing_args))
+                raise MissingArgumentError("Missing arguments {}".format(missing_args))
 
             for missing_arg in missing_args:
                 params_dict[missing_arg] = default_arg
@@ -53,7 +57,7 @@ class Rule():
         params_condition = self._get_params(params, condition_compiled, set_default_arg, default_arg)
         rvalue_condition = condition_compiled(**params_condition).tolist()
         if self.codition_requires_bool and not isinstance(rvalue_condition, bool):
-            raise ValueError('rule: {} - condition does not return a boolean value!'.format(self.rulename))
+            raise ConditionReturnValueError('rule: {} - condition does not return a boolean value!'.format(self.rulename))
         self.status = bool(rvalue_condition)
         return rvalue_condition
 

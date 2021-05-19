@@ -1,0 +1,2 @@
+class DuplicateRuleName(Exception):
+    pass

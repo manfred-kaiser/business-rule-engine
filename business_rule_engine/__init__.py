@@ -56,7 +56,7 @@ class Rule():
         condition_compiled = self._compile_condition(self.conditions)
         params_condition = self._get_params(params, condition_compiled, set_default_arg, default_arg)
         rvalue_condition = condition_compiled(**params_condition).tolist()
-        if self.codition_requires_bool and not isinstance(rvalue_condition, bool):
+        if self.condition_requires_bool and not isinstance(rvalue_condition, bool):
             raise ConditionReturnValueError('rule: {} - condition does not return a boolean value!'.format(self.rulename))
         self.status = bool(rvalue_condition)
         return rvalue_condition

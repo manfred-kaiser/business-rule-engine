@@ -90,7 +90,8 @@ class RuleParser():
 
         for line in text.split('\n'):
             ignore_line = False
-            if line.lower().strip().startswith('rule'):
+            line = line.strip()  # The split on rule name doesn't work for multi-line w/o
+            if line.lower().startswith('rule'):
                 is_condition = False
                 is_action = False
                 rulename = line.split(' ', 1)[1].strip("\"")
@@ -131,6 +132,7 @@ class RuleParser():
         default_arg: Optional[Any] = None
     ) -> bool:
         rule_was_triggered = False
+        rule_results = {}
         for rule in self:
             logging.debug("Rule name: %s", rule.rulename)
             logging.debug("Condition: %s", "".join(rule.conditions))
@@ -140,8 +142,9 @@ class RuleParser():
 
             if rule.status:
                 rule_was_triggered = True
+                rule_results[rule.rulename] = rvalue_action
                 if stop_on_first_trigger:
                     logging.debug("Stop on first trigger")
                     break
                 logging.debug("continue with next rule")
-        return rule_was_triggered
+        return rule_was_triggered, rule_results

@@ -1,5 +1,6 @@
 import logging
 from collections import OrderedDict
+from collections.abc import Iterator
 import formulas  # type: ignore
 
 from typing import (
@@ -20,12 +21,12 @@ from business_rule_engine.exceptions import (
 
 class Rule():
 
-    def __init__(self, rulename, condition_requires_bool: bool = True) -> None:
+    def __init__(self, rulename: Text, condition_requires_bool: bool = True) -> None:
         self.condition_requires_bool = condition_requires_bool
         self.rulename: Text = rulename
         self.conditions: List[Text] = []
         self.actions: List[Text] = []
-        self.status = None
+        self.status: Optional[bool] = None
 
     @staticmethod
     def _compile_condition(condition_lines: List[Text]) -> Any:
@@ -52,7 +53,7 @@ class Rule():
         params_condition = {k: v for k, v in params_dict.items() if k in condition_args}
         return params_condition
 
-    def check_condition(self, params, *, set_default_arg=False, default_arg=None):
+    def check_condition(self, params: Dict[Text, Any], *, set_default_arg: bool = False, default_arg: Any = None) -> Any:
         condition_compiled = self._compile_condition(self.conditions)
         params_condition = self._get_params(params, condition_compiled, set_default_arg, default_arg)
         rvalue_condition = condition_compiled(**params_condition).tolist()
@@ -61,12 +62,12 @@ class Rule():
         self.status = bool(rvalue_condition)
         return rvalue_condition
 
-    def run_action(self, params, *, set_default_arg=False, default_arg=None):
+    def run_action(self, params: Dict[Text, Any], *, set_default_arg: bool = False, default_arg: Any = None) -> Any:
         action_compiled = self._compile_condition(self.actions)
         params_actions = self._get_params(params, action_compiled, set_default_arg, default_arg)
         return action_compiled(**params_actions)
 
-    def execute(self, params, *, set_default_arg=False, default_arg=None) -> Tuple[bool, Any]:
+    def execute(self, params: Dict[Text, Any], *, set_default_arg: bool = False, default_arg: Any = None) -> Tuple[Any, Any]:
         rvalue_condition = self.check_condition(params, set_default_arg=set_default_arg, default_arg=default_arg)
         if not self.status:
             return rvalue_condition, None
@@ -83,10 +84,10 @@ class RuleParser():
         self.condition_requires_bool = condition_requires_bool
 
     def parsestr(self, text: Text) -> None:
-        rulename = None
-        is_condition = False
-        is_action = False
-        ignore_line = False
+        rulename: Optional[Text] = None
+        is_condition: bool = False
+        is_action: bool = False
+        ignore_line: bool = False
 
         for line in text.split('\n'):
             ignore_line = False
@@ -120,7 +121,7 @@ class RuleParser():
         cls.CUSTOM_FUNCTIONS.append(function_name or function.__name__.upper())
         formulas.get_functions()[function_name or function.__name__.upper()] = function  # type: ignore
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Rule]:
         return self.rules.values().__iter__()
 
     def execute(

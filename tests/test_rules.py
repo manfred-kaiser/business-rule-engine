@@ -24,7 +24,7 @@ def test_rules():
     parser = RuleParser()
     parser.register_function(order_more)
     parser.parsestr(rules)
-    parser.execute(params)
+    assert parser.execute(params) is True
 
 
 def test_missing_args():
@@ -32,7 +32,7 @@ def test_missing_args():
     parser = RuleParser()
     parser.register_function(order_more)
     parser.parsestr(rules)
-    parser.execute(params, set_default_arg=True, default_arg=0)
+    assert parser.execute(params, set_default_arg=True, default_arg=0) is True
 
 
 def test_iterate_rules():

@@ -146,6 +146,46 @@ parser.parsestr(rules)
 parser.execute(params, set_default_arg=True, default_arg=0)
 ```
 
+## More control of the RulePraser
+
+if you need more control, how the rule parser handles rules, you can iterate over the parser and execute each rule in your script.
+
+This gives you more control on how to handle missing arguments, rules with errors and you have access to the return values of the conditions and the actions.
+
+```python
+from business_rule_engine import RuleParser
+from business_rule_engine.exceptions import MissingArgumentError
+
+def order_more(items_to_order):
+    return "you ordered {} new items".format(items_to_order)
+
+rules = """
+rule "order new items"
+when
+    products_in_stock < 20
+then
+    order_more(50)
+end
+"""
+
+params = {
+    'products_in_stock': 10
+}
+
+parser = RuleParser()
+parser.register_function(order_more)
+parser.parsestr(rules)
+for rule in parser:
+    try:
+        rvalue_condition, rvalue_action = rule.execute(params)
+        if rule.status:
+            print(rvalue_action)
+            break
+    except MissingArgumentError:
+        pass
+```
+
+
 ## Error Handling
 
 Most of the errors are caused by missing parameters, you can handle the errors and interpret the results handling ValueError:

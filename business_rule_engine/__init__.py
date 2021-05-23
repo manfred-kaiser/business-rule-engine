@@ -56,7 +56,7 @@ class Rule():
         condition_compiled = self._compile_condition(self.conditions)
         params_condition = self._get_params(params, condition_compiled, set_default_arg, default_arg)
         rvalue_condition = condition_compiled(**params_condition).tolist()
-        if self.condition_requires_bool and not isinstance(rvalue_condition, bool):
+        if self.codition_requires_bool and not isinstance(rvalue_condition, bool):
             raise ConditionReturnValueError('rule: {} - condition does not return a boolean value!'.format(self.rulename))
         self.status = bool(rvalue_condition)
         return rvalue_condition
@@ -90,8 +90,7 @@ class RuleParser():
 
         for line in text.split('\n'):
             ignore_line = False
-            line = line.strip()  # The split on rule name doesn't work for multi-line w/o
-            if line.lower().startswith('rule'):
+            if line.lower().strip().startswith('rule'):
                 is_condition = False
                 is_action = False
                 rulename = line.split(' ', 1)[1].strip("\"")
@@ -132,7 +131,6 @@ class RuleParser():
         default_arg: Optional[Any] = None
     ) -> bool:
         rule_was_triggered = False
-        rule_results = {}
         for rule in self:
             logging.debug("Rule name: %s", rule.rulename)
             logging.debug("Condition: %s", "".join(rule.conditions))
@@ -142,9 +140,8 @@ class RuleParser():
 
             if rule.status:
                 rule_was_triggered = True
-                rule_results[rule.rulename] = rvalue_action
                 if stop_on_first_trigger:
                     logging.debug("Stop on first trigger")
                     break
                 logging.debug("continue with next rule")
-        return rule_was_triggered, rule_results
+        return rule_was_triggered

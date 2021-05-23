@@ -41,4 +41,3 @@ jobs:
     - name: Test with mypy
       run: |
         mypy business_rule_engine
-        

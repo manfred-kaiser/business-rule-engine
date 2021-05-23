@@ -121,7 +121,7 @@ class RuleParser():
         cls.CUSTOM_FUNCTIONS.append(function_name or function.__name__.upper())
         formulas.get_functions()[function_name or function.__name__.upper()] = function  # type: ignore
 
-    def __iter__(self) -> Iterator[Rule]:
+    def __iter__(self) -> Iterator:
         return self.rules.values().__iter__()
 
     def execute(

@@ -49,10 +49,10 @@ end
 ### 3. Create the parser and parse the rule
 
 ```python
-from business_rule_engine import RuleParser
+from business_rule_engine import RuleParser, register_action
 
 parser = RuleParser()
-parser.register_function(order_more)
+parser.register_action(order_more)
 parser.parsestr(rules)
 parser.execute(params)
 ```
@@ -80,8 +80,9 @@ rule "order new items urgent"
 when
     products_in_stock < 5,
 then
-    AND(order_more(10, true),
-    order_more(50))
+    order_more(10)
+then
+    order_more(50)
 end
 """
 ```
@@ -177,7 +178,7 @@ parser.register_function(order_more)
 parser.parsestr(rules)
 for rule in parser:
     try:
-        rvalue_condition, rvalue_action = rule.execute(params)
+        rvalue_condition, rvalue_action = await rule.execute(params)
         if rule.status:
             print(rvalue_action)
             break

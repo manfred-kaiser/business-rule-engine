@@ -1,6 +1,7 @@
 import logging
 from collections import OrderedDict
 import formulas  # type: ignore
+import asyncio
 
 from typing import (
     Any,
@@ -17,9 +18,11 @@ from business_rule_engine.exceptions import (
     ConditionReturnValueError
 )
 
+CUSTOM_ACTIONS = {}
+def register_action(function) -> None:
+    CUSTOM_ACTIONS[function.__name__] = function
 
 class Rule():
-
     def __init__(self, rulename, condition_requires_bool: bool = True) -> None:
         self.condition_requires_bool = condition_requires_bool
         self.rulename: Text = rulename
@@ -33,6 +36,22 @@ class Rule():
         if not condition.startswith("="):
             condition = "={}".format(condition)
         return formulas.Parser().ast(condition)[1].compile()  # type: ignore
+
+    @staticmethod
+    async def run_action(self):
+        actions_list = []
+        for action in self.actions:
+            exploded_function_list = action.split('(')
+            function_name = exploded_function_list[0]
+            function_params = exploded_function_list[1].split(')')[0]
+            task = asyncio.create_task(CUSTOM_ACTIONS[function_name](function_params))
+            actions_list.append(task)
+
+        action_result = []
+        for action in actions_list:
+            result = await asyncio.gather(action)
+            action_result.append(result)
+        return action_result
 
     @staticmethod
     def _get_params(params: Dict[Text, Any], condition_compiled: Any, set_default_arg: bool = False, default_arg: Optional[Any] = None) -> Dict[Text, Any]:
@@ -61,16 +80,11 @@ class Rule():
         self.status = bool(rvalue_condition)
         return rvalue_condition
 
-    def run_action(self, params, *, set_default_arg=False, default_arg=None):
-        action_compiled = self._compile_condition(self.actions)
-        params_actions = self._get_params(params, action_compiled, set_default_arg, default_arg)
-        return action_compiled(**params_actions)
-
-    def execute(self, params, *, set_default_arg=False, default_arg=None) -> Tuple[bool, Any]:
+    async def execute(self, params, *, set_default_arg=False, default_arg=None) -> Tuple[bool, Any]:
         rvalue_condition = self.check_condition(params, set_default_arg=set_default_arg, default_arg=default_arg)
         if not self.status:
             return rvalue_condition, None
-        rvalue_action = self.run_action(params, set_default_arg=set_default_arg, default_arg=default_arg)
+        rvalue_action = await self.run_action(self)
         return rvalue_condition, rvalue_action
 
 
@@ -123,7 +137,7 @@ class RuleParser():
     def __iter__(self):
         return self.rules.values().__iter__()
 
-    def execute(
+    async def execute(
         self,
         params: Dict[Text, Any],
         stop_on_first_trigger: bool = True,
@@ -137,7 +151,7 @@ class RuleParser():
             logging.debug("Condition: %s", "".join(rule.conditions))
             logging.debug("Action: %s", "".join(rule.actions))
 
-            rvalue_conditon, rvalue_action = rule.execute(params, set_default_arg=set_default_arg, default_arg=default_arg)
+            rvalue_conditon, rvalue_action = await rule.execute(params, set_default_arg=set_default_arg, default_arg=default_arg)
 
             if rule.status:
                 rule_was_triggered = True

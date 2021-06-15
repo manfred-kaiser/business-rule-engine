@@ -15,7 +15,8 @@ from typing import (
 from business_rule_engine.exceptions import (
     DuplicateRuleName,
     MissingArgumentError,
-    ConditionReturnValueError
+    ConditionReturnValueError,
+    RuleParserSyntaxError,
 )
 
 
@@ -30,7 +31,7 @@ class Rule():
 
     @staticmethod
     def _compile_condition(condition_lines: List[Text]) -> Any:
-        condition = "".join(condition_lines)
+        condition = " ".join(condition_lines)
         if not condition.startswith("="):
             condition = "={}".format(condition)
         return formulas.Parser().ast(condition)[1].compile()  # type: ignore
@@ -87,6 +88,7 @@ class RuleParser():
         rulename: Optional[Text] = None
         is_condition: bool = False
         is_action: bool = False
+        is_then: bool = False
         ignore_line: bool = False
 
         for line in text.split('\n'):
@@ -104,6 +106,9 @@ class RuleParser():
                 is_condition = True
                 is_action = False
             if line.lower().strip().startswith('then'):
+                if is_then:
+                    raise RuleParserSyntaxError('using multiple "then" in one rule is not allowed')
+                is_then = True
                 ignore_line = True
                 is_condition = False
                 is_action = True
@@ -111,6 +116,7 @@ class RuleParser():
                 ignore_line = True
                 is_condition = False
                 is_action = False
+                is_then = False
             if rulename and is_condition and not ignore_line:
                 self.rules[rulename].conditions.append(line.strip())
             if rulename and is_action and not ignore_line:
@@ -118,8 +124,9 @@ class RuleParser():
 
     @classmethod
     def register_function(cls, function: Any, function_name: Optional[Text] = None) -> None:
-        cls.CUSTOM_FUNCTIONS.append(function_name or function.__name__.upper())
-        formulas.get_functions()[function_name or function.__name__.upper()] = function  # type: ignore
+        custom_function_name = function_name or function.__name__
+        cls.CUSTOM_FUNCTIONS.append(custom_function_name.upper())
+        formulas.get_functions()[custom_function_name.upper()] = function  # type: ignore
 
     def __iter__(self) -> Iterator:
         return self.rules.values().__iter__()

@@ -2,6 +2,10 @@ class RuleParserException(Exception):
     pass
 
 
+class RuleParserSyntaxError(RuleParserException):
+    pass
+
+
 class DuplicateRuleName(RuleParserException):
     pass
 

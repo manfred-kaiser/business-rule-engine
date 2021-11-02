@@ -94,3 +94,12 @@ def test_rule():
 
     assert rule.check_condition(params) == True
     assert rule.run_action(params) == 5
+
+
+def test_add_rule():
+    parser = RuleParser()
+    parser.add_rule('testrule', 'products_in_stock < 20', '2 + 3')
+    params = {
+        'products_in_stock': 10
+    }
+    parser.execute(params)

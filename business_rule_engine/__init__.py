@@ -122,6 +122,14 @@ class RuleParser():
             if rulename and is_action and not ignore_line:
                 self.rules[rulename].actions.append(line.strip())
 
+    def add_rule(self, rulename: Text, condition: Text, action: Text) -> None:
+        if rulename in self.rules:
+            raise DuplicateRuleName("Rule '{}' already exists!".format(rulename))
+        rule = Rule(rulename)
+        rule.conditions.append(condition)
+        rule.actions.append(action)
+        self.rules[rulename] = rule
+
     @classmethod
     def register_function(cls, function: Any, function_name: Optional[Text] = None) -> None:
         custom_function_name = function_name or function.__name__

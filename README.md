@@ -1,12 +1,12 @@
 business-rule-engine
 ====================
 
-[![CodeFactor](https://www.codefactor.io/repository/github/manfred-kaiser/business-rule-engine/badge)](https://www.codefactor.io/repository/github/manfred-kaiser/business-rule-engine)
-[![Github version](https://img.shields.io/github/v/release/manfred-kaiser/business-rule-engine?label=github&logo=github)](https://github.com/manfred-kaiser/business-rule-engine/releases)
+[![CodeFactor](https://www.codefactor.io/repository/github/ssh-mitm/business-rule-engine/badge)](https://www.codefactor.io/repository/github/ssh-mitm/business-rule-engine)
+[![Github version](https://img.shields.io/github/v/release/ssh-mitm/business-rule-engine?label=github&logo=github)](https://github.com/ssh-mitm/business-rule-engine/releases)
 [![PyPI version](https://img.shields.io/pypi/v/business-rule-engine.svg?logo=pypi&logoColor=FFE873)](https://pypi.org/project/business-rule-engine/)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/business-rule-engine.svg?logo=python&logoColor=FFE873)](https://pypi.org/project/business-rule-engine/)
 [![PyPI downloads](https://pepy.tech/badge/business-rule-engine/month)](https://pepy.tech/project/business-rule-engine/month)
-[![GitHub](https://img.shields.io/github/license/manfred-kaiser/business-rule-engine.svg)](LICENSE)
+[![GitHub](https://img.shields.io/github/license/ssh-mitm/business-rule-engine.svg)](LICENSE)
 
 As a software system grows in complexity and usage, it can become burdensome if every change to the logic/behavior of the system also requires you to write and deploy new code. The goal of this business rules engine is to provide a simple interface allowing anyone to capture new rules and logic defining the behavior of a system, and a way to then process those rules on the backend.
 

@@ -19,10 +19,10 @@ setup(
     keywords="business rules engine",
     python_requires='>= 3.6',
     packages=find_packages(exclude=("tests",)),  # type: ignore
-    url="https://github.com/manfred-kaiser/business-rule-engine",
+    url="https://github.com/ssh-mitm/business-rule-engine",
     project_urls={
-        'Source': 'https://github.com/manfred-kaiser/business-rule-engine',
-        'Tracker': 'https://github.com/manfred-kaiser/business-rule-engine/issues',
+        'Source': 'https://github.com/ssh-mitm/business-rule-engine',
+        'Tracker': 'https://github.com/ssh-mitm/business-rule-engine/issues',
     },
     classifiers=[
         "Programming Language :: Python :: 3",

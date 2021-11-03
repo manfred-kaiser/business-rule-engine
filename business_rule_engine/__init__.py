@@ -5,12 +5,16 @@ import formulas  # type: ignore
 
 from typing import (
     Any,
+    Callable,
     Dict,
     List,
     Text,
     Tuple,
     Optional
 )
+from typeguard import typechecked
+from schedula.utils.dsp import DispatchPipe
+from formulas.functions import Array
 
 from business_rule_engine.exceptions import (
     DuplicateRuleName,
@@ -22,6 +26,7 @@ from business_rule_engine.exceptions import (
 
 class Rule():
 
+    @typechecked
     def __init__(self, rulename: Text, condition_requires_bool: bool = True) -> None:
         self.condition_requires_bool = condition_requires_bool
         self.rulename: Text = rulename
@@ -30,14 +35,16 @@ class Rule():
         self.status: Optional[bool] = None
 
     @staticmethod
-    def _compile_condition(condition_lines: List[Text]) -> Any:
+    @typechecked
+    def _compile_condition(condition_lines: List[Text]) -> DispatchPipe:
         condition = " ".join(condition_lines)
         if not condition.startswith("="):
             condition = "={}".format(condition)
         return formulas.Parser().ast(condition)[1].compile()  # type: ignore
 
     @staticmethod
-    def _get_params(params: Dict[Text, Any], condition_compiled: Any, set_default_arg: bool = False, default_arg: Optional[Any] = None) -> Dict[Text, Any]:
+    @typechecked
+    def _get_params(params: Dict[Text, Any], condition_compiled: DispatchPipe, set_default_arg: bool = False, default_arg: Optional[Any] = None) -> Dict[Text, Any]:
         params_dict: Dict[Text, Any] = {k.upper(): v for k, v in params.items()}
         param_names = set(params_dict.keys())
 
@@ -54,6 +61,7 @@ class Rule():
         params_condition = {k: v for k, v in params_dict.items() if k in condition_args}
         return params_condition
 
+    @typechecked
     def check_condition(self, params: Dict[Text, Any], *, set_default_arg: bool = False, default_arg: Any = None) -> Any:
         condition_compiled = self._compile_condition(self.conditions)
         params_condition = self._get_params(params, condition_compiled, set_default_arg, default_arg)
@@ -63,11 +71,13 @@ class Rule():
         self.status = bool(rvalue_condition)
         return rvalue_condition
 
+    @typechecked
     def run_action(self, params: Dict[Text, Any], *, set_default_arg: bool = False, default_arg: Any = None) -> Any:
         action_compiled = self._compile_condition(self.actions)
         params_actions = self._get_params(params, action_compiled, set_default_arg, default_arg)
         return action_compiled(**params_actions)
 
+    @typechecked
     def execute(self, params: Dict[Text, Any], *, set_default_arg: bool = False, default_arg: Any = None) -> Tuple[Any, Any]:
         rvalue_condition = self.check_condition(params, set_default_arg=set_default_arg, default_arg=default_arg)
         if not self.status:
@@ -80,10 +90,12 @@ class RuleParser():
 
     CUSTOM_FUNCTIONS: List[Text] = []
 
+    @typechecked
     def __init__(self, condition_requires_bool: bool = True) -> None:
         self.rules: Dict[Text, Rule] = OrderedDict()
         self.condition_requires_bool = condition_requires_bool
 
+    @typechecked
     def parsestr(self, text: Text) -> None:
         rulename: Optional[Text] = None
         is_condition: bool = False
@@ -122,6 +134,7 @@ class RuleParser():
             if rulename and is_action and not ignore_line:
                 self.rules[rulename].actions.append(line.strip())
 
+    @typechecked
     def add_rule(self, rulename: Text, condition: Text, action: Text) -> None:
         if rulename in self.rules:
             raise DuplicateRuleName("Rule '{}' already exists!".format(rulename))
@@ -131,14 +144,17 @@ class RuleParser():
         self.rules[rulename] = rule
 
     @classmethod
-    def register_function(cls, function: Any, function_name: Optional[Text] = None) -> None:
+    @typechecked
+    def register_function(cls, function: Callable, function_name: Optional[Text] = None) -> None:
         custom_function_name = function_name or function.__name__
         cls.CUSTOM_FUNCTIONS.append(custom_function_name.upper())
         formulas.get_functions()[custom_function_name.upper()] = function  # type: ignore
 
+    @typechecked
     def __iter__(self) -> Iterator:
         return self.rules.values().__iter__()
 
+    @typechecked
     def execute(
         self,
         params: Dict[Text, Any],

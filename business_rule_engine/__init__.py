@@ -13,8 +13,7 @@ from typing import (
     Optional
 )
 from typeguard import typechecked
-from schedula.utils.dsp import DispatchPipe
-from formulas.functions import Array
+from schedula.utils.dsp import DispatchPipe  # type: ignore
 
 from business_rule_engine.exceptions import (
     DuplicateRuleName,

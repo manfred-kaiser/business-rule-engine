@@ -131,3 +131,4 @@ dmypy.json
 
 docs/source/modules
 .vscode/
+.devcontainer/devcontainer.json

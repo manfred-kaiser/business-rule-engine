@@ -28,6 +28,8 @@ class Rule():
         self.conditions: List[Text] = []
         self.actions: List[Text] = []
         self.status: Optional[bool] = None
+        self.condition_compiled = None
+        self.action_compiled = None
 
     @staticmethod
     def _compile_condition(condition_lines: List[Text]) -> Any:
@@ -55,7 +57,9 @@ class Rule():
         return params_condition
 
     def check_condition(self, params: Dict[Text, Any], *, set_default_arg: bool = False, default_arg: Any = None) -> Any:
-        condition_compiled = self._compile_condition(self.conditions)
+        if not self.condition_compiled:
+            self.condition_compiled = self._compile_condition(self.conditions)
+        condition_compiled = self.condition_compiled
         params_condition = self._get_params(params, condition_compiled, set_default_arg, default_arg)
         rvalue_condition = condition_compiled(**params_condition).tolist()
         if self.condition_requires_bool and not isinstance(rvalue_condition, bool):
@@ -64,7 +68,9 @@ class Rule():
         return rvalue_condition
 
     def run_action(self, params: Dict[Text, Any], *, set_default_arg: bool = False, default_arg: Any = None) -> Any:
-        action_compiled = self._compile_condition(self.actions)
+        if not self.action_compiled:
+            self.action_compiled = self._compile_condition(self.actions)
+        action_compiled = self.action_compiled
         params_actions = self._get_params(params, action_compiled, set_default_arg, default_arg)
         return action_compiled(**params_actions)
 
@@ -121,6 +127,7 @@ class RuleParser():
                 self.rules[rulename].conditions.append(line.strip())
             if rulename and is_action and not ignore_line:
                 self.rules[rulename].actions.append(line.strip())
+            
 
     def add_rule(self, rulename: Text, condition: Text, action: Text) -> None:
         if rulename in self.rules:

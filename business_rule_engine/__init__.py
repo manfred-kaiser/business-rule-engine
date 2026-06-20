@@ -75,18 +75,16 @@ class Rule:
 
     def check_condition(self, params: dict[str, Any], *, set_default_arg: bool = False, default_arg: Any = None) -> bool:
         names = self._build_names(params, set_default_arg, default_arg)
-        results = []
-        for condition in self.conditions:
-            try:
-                result = self._evaluate(condition, names)
-            except NameNotDefined as e:
-                raise MissingArgumentError(str(e)) from e
-            if self.condition_requires_bool and not isinstance(result, bool):
-                raise ConditionReturnValueError(
-                    f"rule: {self.rulename} - condition does not return a boolean value!"
-                )
-            results.append(bool(result))
-        self.status = all(results)
+        condition = " ".join(self.conditions)
+        try:
+            result = self._evaluate(condition, names)
+        except NameNotDefined as e:
+            raise MissingArgumentError(str(e)) from e
+        if self.condition_requires_bool and not isinstance(result, bool):
+            raise ConditionReturnValueError(
+                f"rule: {self.rulename} - condition does not return a boolean value!"
+            )
+        self.status = bool(result)
         return self.status
 
     def run_action(self, params: dict[str, Any], *, set_default_arg: bool = False, default_arg: Any = None) -> list[Any]:

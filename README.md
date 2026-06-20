@@ -63,16 +63,14 @@ if result:
 
 ## Multiple conditions and multiple actions
 
-Each line in the `when` block is a separate condition — all must be true (implicit AND). For OR logic, use `or` within a single line.
-
-Each line in the `then` block is executed in order. The results are available as a list in `action_result`.
+The `when` block uses standard Python boolean syntax. Multiple lines are joined into a single expression, so `and`/`or` work exactly as in Python. Each line in the `then` block is a separate action executed in order.
 
 ```python
 rules = """
 rule "standard reorder"
 when
     products_in_stock < 20
-    margin > 0.3
+    and margin > 0.3
 then
     order_more(50)
     notify_purchasing()
@@ -80,7 +78,8 @@ end
 
 rule "urgent reorder"
 when
-    products_in_stock < 5 or products_reserved > 100
+    products_in_stock < 5
+    or products_reserved > 100
 then
     order_more(200)
     notify_manager()

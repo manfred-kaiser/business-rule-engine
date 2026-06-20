@@ -107,7 +107,7 @@ def test_multiple_conditions():
 rule "order new items"
 when
     products_in_stock < 20
-    margin > 0.3
+    and margin > 0.3
 then
     order_more(50)
 end

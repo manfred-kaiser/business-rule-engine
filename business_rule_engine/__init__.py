@@ -134,8 +134,9 @@ class RuleParser():
     @classmethod
     def register_function(cls, function: Any, function_name: str | None = None) -> None:
         custom_function_name = function_name or function.__name__
-        cls.CUSTOM_FUNCTIONS.append(custom_function_name.upper())
-        formulas.get_functions()[custom_function_name.upper()] = function  # type: ignore
+        if custom_function_name.upper() not in cls.CUSTOM_FUNCTIONS:
+            cls.CUSTOM_FUNCTIONS.append(custom_function_name.upper())
+            formulas.get_functions()[custom_function_name.upper()] = function  # type: ignore
 
     def __iter__(self) -> Iterator:
         return self.rules.values().__iter__()

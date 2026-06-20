@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Parser bug: `is_then` was not reset when a new `rule` block started, causing a false `RuleParserSyntaxError` if a preceding rule was missing its `end` keyword
 - Typo `rvalue_conditon` → `rvalue_condition` in `RuleParser.execute()`
+- `register_function` no longer registers the same function multiple times when called repeatedly across instances
 
 
 ## [0.2.0] - 2021-11-02

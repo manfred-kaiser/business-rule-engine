@@ -21,7 +21,7 @@ classifiers = [
 ]
 requires-python = ">= 3.11"
 dependencies = [
-    "formulas",
+    "formulas>=1.2",
 ]
 
 [project.urls]

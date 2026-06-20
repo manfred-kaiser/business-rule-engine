@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- License changed from GPL v3 to MIT
+
 ## [1.0.0] - 2026-06-20
 
 ### Breaking Changes

@@ -46,7 +46,7 @@ end
 """
 ```
 
-### 3. Create the parser and parse the rule
+### 4. Create the parser and parse the rule
 
 ```python
 from business_rule_engine import RuleParser
@@ -126,7 +126,7 @@ If some argruments are missing, the rule engine will raise a ValueError.
 There are some use cases, when you have to work with incomplete data. In such cases, you can define
 default arguments.
 
-You enable default rule arguments with the parameter `set_defaule_arg`. The default argument will have the Value `None`. To provide another value you can use `default_arg`.
+You enable default rule arguments with the parameter `set_default_arg`. The default argument will have the Value `None`. To provide another value you can use `default_arg`.
 
 ```python
 params = {}
@@ -146,7 +146,7 @@ parser.parsestr(rules)
 parser.execute(params, set_default_arg=True, default_arg=0)
 ```
 
-## More control of the RulePraser
+## More control of the RuleParser
 
 if you need more control, how the rule parser handles rules, you can iterate over the parser and execute each rule in your script.
 
@@ -188,12 +188,16 @@ for rule in parser:
 
 ## Error Handling
 
-Most of the errors are caused by missing parameters, you can handle the errors and interpret the results handling ValueError:
+Most of the errors are caused by missing parameters, you can handle the errors and interpret the results by catching `MissingArgumentError`:
 
 ```python
 from business_rule_engine import RuleParser
+from business_rule_engine.exceptions import MissingArgumentError
 
-# proposital typo
+def order_more(items_to_order):
+    return "you ordered {} new items".format(items_to_order)
+
+# intentional typo
 params = {
     'produtcs_in_stock': 30
 }
@@ -214,7 +218,7 @@ try:
     ret = parser.execute(params)
     if ret is False:
         print("No conditions matched")
-except ValueError as e:
+except MissingArgumentError as e:
     print(e)
 ```
 

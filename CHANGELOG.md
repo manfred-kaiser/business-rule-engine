@@ -5,6 +5,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [Unreleased]
+
+### Added
+
+- PyPI publishing via Trusted Publisher (OIDC) — no more token secrets required
+
+### Changed
+
+- Migrated build system from `setup.py` to `pyproject.toml` with hatchling
+- Minimum Python version raised to 3.11; CI matrix now covers 3.11, 3.12, 3.13
+- Replaced deprecated `typing.Dict`, `List`, `Text`, `Tuple`, `Optional` with built-in types (`dict`, `list`, `str`, `tuple`, `X | None`)
+- Replaced `OrderedDict` with plain `dict` (ordered since Python 3.7)
+- `test_speed.py` now runs as a proper pytest test function instead of at import time
+
+### Fixed
+
+- Parser bug: `is_then` was not reset when a new `rule` block started, causing a false `RuleParserSyntaxError` if a preceding rule was missing its `end` keyword
+- Typo `rvalue_conditon` → `rvalue_condition` in `RuleParser.execute()`
+
+
 ## [0.2.0] - 2021-11-02
 
 ### Added
@@ -81,6 +101,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Initial release
 
 
+[Unreleased]: https://github.com/manfred-kaiser/business-rule-engine/compare/0.2.0...master
 [0.2.0]: https://github.com/manfred-kaiser/business-rule-engine/compare/0.1.3...0.2.0
 [0.1.3]: https://github.com/manfred-kaiser/business-rule-engine/compare/0.1.2...0.1.3
 [0.1.2]: https://github.com/manfred-kaiser/business-rule-engine/compare/0.1.1...0.1.2

@@ -1,18 +1,10 @@
 __version__ = "0.2.0"
 
 import logging
-from collections import OrderedDict
 from collections.abc import Iterator
 import formulas  # type: ignore
 
-from typing import (
-    Any,
-    Dict,
-    List,
-    Text,
-    Tuple,
-    Optional
-)
+from typing import Any
 
 from business_rule_engine.exceptions import (
     DuplicateRuleName,
@@ -24,28 +16,28 @@ from business_rule_engine.exceptions import (
 
 class Rule():
 
-    def __init__(self, rulename: Text, condition_requires_bool: bool = True) -> None:
+    def __init__(self, rulename: str, condition_requires_bool: bool = True) -> None:
         self.condition_requires_bool = condition_requires_bool
-        self.rulename: Text = rulename
-        self.conditions: List[Text] = []
-        self.actions: List[Text] = []
-        self.status: Optional[bool] = None
+        self.rulename: str = rulename
+        self.conditions: list[str] = []
+        self.actions: list[str] = []
+        self.status: bool | None = None
         self.condition_compiled = None
         self.action_compiled = None
 
     @staticmethod
-    def _compile_condition(condition_lines: List[Text]) -> Any:
+    def _compile_condition(condition_lines: list[str]) -> Any:
         condition = " ".join(condition_lines)
         if not condition.startswith("="):
             condition = "={}".format(condition)
         return formulas.Parser().ast(condition)[1].compile()  # type: ignore
 
     @staticmethod
-    def _get_params(params: Dict[Text, Any], condition_compiled: Any, set_default_arg: bool = False, default_arg: Optional[Any] = None) -> Dict[Text, Any]:
-        params_dict: Dict[Text, Any] = {k.upper(): v for k, v in params.items()}
+    def _get_params(params: dict[str, Any], condition_compiled: Any, set_default_arg: bool = False, default_arg: Any = None) -> dict[str, Any]:
+        params_dict: dict[str, Any] = {k.upper(): v for k, v in params.items()}
         param_names = set(params_dict.keys())
 
-        condition_args: List[Text] = list(condition_compiled.inputs.keys())
+        condition_args: list[str] = list(condition_compiled.inputs.keys())
 
         if not set(condition_args).issubset(param_names):
             missing_args = set(condition_args).difference(param_names)
@@ -58,7 +50,7 @@ class Rule():
         params_condition = {k: v for k, v in params_dict.items() if k in condition_args}
         return params_condition
 
-    def check_condition(self, params: Dict[Text, Any], *, set_default_arg: bool = False, default_arg: Any = None) -> Any:
+    def check_condition(self, params: dict[str, Any], *, set_default_arg: bool = False, default_arg: Any = None) -> Any:
         if not self.condition_compiled:
             self.condition_compiled = self._compile_condition(self.conditions)
         condition_compiled = self.condition_compiled
@@ -69,14 +61,14 @@ class Rule():
         self.status = bool(rvalue_condition)
         return rvalue_condition
 
-    def run_action(self, params: Dict[Text, Any], *, set_default_arg: bool = False, default_arg: Any = None) -> Any:
+    def run_action(self, params: dict[str, Any], *, set_default_arg: bool = False, default_arg: Any = None) -> Any:
         if not self.action_compiled:
             self.action_compiled = self._compile_condition(self.actions)
         action_compiled = self.action_compiled
         params_actions = self._get_params(params, action_compiled, set_default_arg, default_arg)
         return action_compiled(**params_actions)
 
-    def execute(self, params: Dict[Text, Any], *, set_default_arg: bool = False, default_arg: Any = None) -> Tuple[Any, Any]:
+    def execute(self, params: dict[str, Any], *, set_default_arg: bool = False, default_arg: Any = None) -> tuple[Any, Any]:
         rvalue_condition = self.check_condition(params, set_default_arg=set_default_arg, default_arg=default_arg)
         if not self.status:
             return rvalue_condition, None
@@ -86,14 +78,14 @@ class Rule():
 
 class RuleParser():
 
-    CUSTOM_FUNCTIONS: List[Text] = []
+    CUSTOM_FUNCTIONS: list[str] = []
 
     def __init__(self, condition_requires_bool: bool = True) -> None:
-        self.rules: Dict[Text, Rule] = OrderedDict()
+        self.rules: dict[str, Rule] = {}
         self.condition_requires_bool = condition_requires_bool
 
-    def parsestr(self, text: Text) -> None:
-        rulename: Optional[Text] = None
+    def parsestr(self, text: str) -> None:
+        rulename: str | None = None
         is_condition: bool = False
         is_action: bool = False
         is_then: bool = False
@@ -101,10 +93,11 @@ class RuleParser():
 
         for line in text.split('\n'):
             ignore_line = False
-            line = line.strip()  # The split on rule name doesn't work for multi-line w/o
+            line = line.strip()
             if line.lower().startswith('rule'):
                 is_condition = False
                 is_action = False
+                is_then = False
                 rulename = line.split(' ', 1)[1].strip("\"")
                 if rulename in self.rules:
                     raise DuplicateRuleName("Rule '{}' already exists!".format(rulename))
@@ -129,9 +122,8 @@ class RuleParser():
                 self.rules[rulename].conditions.append(line.strip())
             if rulename and is_action and not ignore_line:
                 self.rules[rulename].actions.append(line.strip())
-            
 
-    def add_rule(self, rulename: Text, condition: Text, action: Text) -> None:
+    def add_rule(self, rulename: str, condition: str, action: str) -> None:
         if rulename in self.rules:
             raise DuplicateRuleName("Rule '{}' already exists!".format(rulename))
         rule = Rule(rulename)
@@ -140,7 +132,7 @@ class RuleParser():
         self.rules[rulename] = rule
 
     @classmethod
-    def register_function(cls, function: Any, function_name: Optional[Text] = None) -> None:
+    def register_function(cls, function: Any, function_name: str | None = None) -> None:
         custom_function_name = function_name or function.__name__
         cls.CUSTOM_FUNCTIONS.append(custom_function_name.upper())
         formulas.get_functions()[custom_function_name.upper()] = function  # type: ignore
@@ -150,11 +142,11 @@ class RuleParser():
 
     def execute(
         self,
-        params: Dict[Text, Any],
+        params: dict[str, Any],
         stop_on_first_trigger: bool = True,
         *,
         set_default_arg: bool = False,
-        default_arg: Optional[Any] = None
+        default_arg: Any = None
     ) -> bool:
         rule_was_triggered = False
         for rule in self:
@@ -162,7 +154,7 @@ class RuleParser():
             logging.debug("Condition: %s", "".join(rule.conditions))
             logging.debug("Action: %s", "".join(rule.actions))
 
-            rvalue_conditon, rvalue_action = rule.execute(params, set_default_arg=set_default_arg, default_arg=default_arg)
+            rvalue_condition, rvalue_action = rule.execute(params, set_default_arg=set_default_arg, default_arg=default_arg)
 
             if rule.status:
                 rule_was_triggered = True

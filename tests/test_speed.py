@@ -1,7 +1,4 @@
 import time
-import sys
-import os
-sys.path.insert(0, os.getcwd())
 from business_rule_engine import RuleParser
 
 
@@ -18,17 +15,17 @@ then
 end
 """
 
-parser = RuleParser()
-parser.register_function(order_more)
-parser.parsestr(rules)
 
-params_list = [{'products_in_stock': 10}] * 10_000
+def test_speed():
+    parser = RuleParser()
+    parser.register_function(order_more)
+    parser.parsestr(rules)
 
-start_time = time.time()
+    params_list = [{'products_in_stock': 10}] * 10_000
 
-for params in params_list:
-    assert parser.execute(params) is True
+    start_time = time.time()
+    for params in params_list:
+        assert parser.execute(params) is True
+    execution_time = time.time() - start_time
 
-end_time = time.time()
-execution_time = end_time - start_time
-print(f"Execution time: {execution_time:.3f} seconds")
+    print(f"Execution time: {execution_time:.3f} seconds")

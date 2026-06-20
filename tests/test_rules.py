@@ -1,4 +1,4 @@
-import pytest  # type: ignore
+import pytest
 from business_rule_engine import RuleParser, Rule
 from business_rule_engine.exceptions import RuleParserSyntaxError
 from formulas.errors import FormulaError

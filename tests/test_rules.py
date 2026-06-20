@@ -1,7 +1,6 @@
 import pytest
 from business_rule_engine import RuleParser, Rule
 from business_rule_engine.exceptions import RuleParserSyntaxError, MissingArgumentError
-from formulas.errors import FormulaError
 
 
 def order_more(items_to_order):
@@ -19,9 +18,7 @@ end
 
 
 def test_rules():
-    params = {
-        'products_in_stock': 10
-    }
+    params = {'products_in_stock': 10}
     parser = RuleParser()
     parser.register_function(order_more)
     parser.parsestr(rules)
@@ -37,16 +34,14 @@ def test_missing_args():
 
 
 def test_iterate_rules():
-    params = {
-        'products_in_stock': 10
-    }
+    params = {'products_in_stock': 10}
     parser = RuleParser()
     parser.register_function(order_more)
     parser.parsestr(rules)
     for rule in parser:
-        rvalue_condition, rvalue_action = rule.execute(params)
+        condition_result, action_results = rule.execute(params)
         if rule.status:
-            assert rvalue_action == "you ordered 50 new items"
+            assert action_results[0] == "you ordered 50 new items"
             break
 
 
@@ -66,40 +61,20 @@ def test_duplicate_then():
         parser.parsestr(rules_invalid)
 
 
-def test_multiple_lines_invalid():
-    rules_invalid = """
-    rule "order new items"
-    when
-        1 = 1
-    then
-        1 + 1
-        2 + 2
-    end
-    """
-    parser = RuleParser()
-    parser.parsestr(rules_invalid)
-    with pytest.raises(FormulaError):
-        parser.execute({})
-
-
 def test_rule():
-    params = {
-        'products_in_stock': 10
-    }
+    params = {'products_in_stock': 10}
     rule = Rule('testrule')
     rule.conditions.append('products_in_stock < 20')
     rule.actions.append('2 + 3')
 
     assert rule.check_condition(params) is True
-    assert rule.run_action(params) == 5
+    assert rule.run_action(params) == [5]
 
 
 def test_add_rule():
     parser = RuleParser()
     parser.add_rule('testrule', 'products_in_stock < 20', '2 + 3')
-    params = {
-        'products_in_stock': 10
-    }
+    params = {'products_in_stock': 10}
     parser.execute(params)
 
 
@@ -113,7 +88,7 @@ def test_execution_result():
     assert len(result.results) == 1
     assert result.results[0].rule_name == "order new items"
     assert result.results[0].triggered is True
-    assert result.results[0].action_result == "you ordered 50 new items"
+    assert result.results[0].action_result == ["you ordered 50 new items"]
 
 
 def test_execution_result_no_trigger():
@@ -124,7 +99,75 @@ def test_execution_result_no_trigger():
     result = parser.execute(params)
     assert not result
     assert result.results[0].triggered is False
-    assert result.results[0].action_result is None
+    assert result.results[0].action_result == []
+
+
+def test_multiple_conditions():
+    rules_multi = """
+rule "order new items"
+when
+    products_in_stock < 20
+    margin > 0.3
+then
+    order_more(50)
+end
+"""
+    parser = RuleParser()
+    parser.register_function(order_more)
+    parser.parsestr(rules_multi)
+
+    assert parser.execute({'products_in_stock': 10, 'margin': 0.5})
+    assert not parser.execute({'products_in_stock': 10, 'margin': 0.1})
+    assert not parser.execute({'products_in_stock': 30, 'margin': 0.5})
+
+
+def test_multiple_actions():
+    log = []
+
+    def action_a():
+        log.append('a')
+        return 'a'
+
+    def action_b():
+        log.append('b')
+        return 'b'
+
+    rules_multi = """
+rule "multi action"
+when
+    trigger == True
+then
+    action_a()
+    action_b()
+end
+"""
+    parser = RuleParser()
+    parser.register_function(action_a)
+    parser.register_function(action_b)
+    parser.parsestr(rules_multi)
+
+    result = parser.execute({'trigger': True})
+    assert result
+    assert result.results[0].action_result == ['a', 'b']
+    assert log == ['a', 'b']
+
+
+def test_inline_boolean():
+    rules_inline = """
+rule "inline or"
+when
+    products_in_stock < 5 or category == "priority"
+then
+    order_more(100)
+end
+"""
+    parser = RuleParser()
+    parser.register_function(order_more)
+    parser.parsestr(rules_inline)
+
+    assert parser.execute({'products_in_stock': 3, 'category': 'normal'})
+    assert parser.execute({'products_in_stock': 50, 'category': 'priority'})
+    assert not parser.execute({'products_in_stock': 50, 'category': 'normal'})
 
 
 def test_priority():
@@ -150,6 +193,21 @@ end
     result = parser.execute(params)
     assert result
     assert result.results[0].rule_name == "high priority"
+
+
+def test_priority_as_own_line():
+    rules_prio = """
+rule "order new items"
+priority 5
+when
+    products_in_stock < 20
+then
+    order_more(50)
+end
+"""
+    parser = RuleParser()
+    parser.parsestr(rules_prio)
+    assert parser.rules["order new items"].priority == 5
 
 
 def test_disabled_rule():

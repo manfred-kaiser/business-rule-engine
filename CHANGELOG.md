@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-06-20
+
+### Breaking Changes
+
+- Replaced `formulas` with `simpleeval`: rule expressions now use Python syntax (`and`/`or`/`not`/`==`) instead of Excel syntax (`AND()`/`OR()`/`=`)
+- Multiple `when` lines are now evaluated with implicit AND — each line is a separate condition, all must be true
+- Multiple `then` lines are now executed sequentially — `action_result` in `RuleResult` is `list[Any]` instead of `Any`
+- `Rule.execute()` now returns `tuple[bool, list[Any]]` instead of `tuple[Any, Any]`
+- `RuleParser.CUSTOM_FUNCTIONS` is now `dict[str, Any]` (name → function) instead of `list[str]`
+
 ### Added
 
 - PyPI publishing via Trusted Publisher (OIDC) — no more token secrets required
@@ -102,7 +112,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Initial release
 
 
-[Unreleased]: https://github.com/manfred-kaiser/business-rule-engine/compare/0.2.0...master
+[Unreleased]: https://github.com/manfred-kaiser/business-rule-engine/compare/1.0.0...master
+[1.0.0]: https://github.com/manfred-kaiser/business-rule-engine/compare/0.2.0...1.0.0
 [0.2.0]: https://github.com/manfred-kaiser/business-rule-engine/compare/0.1.3...0.2.0
 [0.1.3]: https://github.com/manfred-kaiser/business-rule-engine/compare/0.1.2...0.1.3
 [0.1.2]: https://github.com/manfred-kaiser/business-rule-engine/compare/0.1.1...0.1.2

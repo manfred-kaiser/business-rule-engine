@@ -6,7 +6,7 @@ business-rule-engine
 [![PyPI version](https://img.shields.io/pypi/v/business-rule-engine.svg?logo=pypi&logoColor=FFE873)](https://pypi.org/project/business-rule-engine/)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/business-rule-engine.svg?logo=python&logoColor=FFE873)](https://pypi.org/project/business-rule-engine/)
 [![PyPI downloads](https://pepy.tech/badge/business-rule-engine/month)](https://pepy.tech/project/business-rule-engine/month)
-[![GitHub](https://img.shields.io/github/license/business-rule-engine.svg)](LICENSE)
+[![GitHub](https://img.shields.io/github/license/manfred-kaiser/business-rule-engine.svg)](LICENSE)
 
 As a software system grows in complexity and usage, it can become burdensome if every change to the logic/behavior of the system also requires you to write and deploy new code. The goal of this business rules engine is to provide a simple interface allowing anyone to capture new rules and logic defining the behavior of a system, and a way to then process those rules on the backend.
 
@@ -34,6 +34,8 @@ def order_more(items_to_order):
 
 ### 3. Write the rules
 
+Rules use standard Python expression syntax. Each `when` line is a separate condition — all must be true for the rule to trigger. Each `then` line is an action executed in order.
+
 ```python
 rules = """
 rule "order new items"
@@ -59,30 +61,29 @@ if result:
     print("A rule was triggered")
 ```
 
-## Supported functions
-
-Business rule engine uses Excel-like functions (thanks to [formulas](https://github.com/vinci1it2000/formulas)). This means you can use `AND()`, `OR()`, `NOT()`, `IF()`, `ISNUMBER()` and most other Excel functions directly in your rules.
-
 ## Multiple conditions and multiple actions
 
-Use `AND()` and `OR()` to combine multiple conditions, and `AND()` to call multiple action functions:
+Each line in the `when` block is a separate condition — all must be true (implicit AND). For OR logic, use `or` within a single line.
+
+Each line in the `then` block is executed in order. The results are available as a list in `action_result`.
 
 ```python
 rules = """
-rule "order new items"
+rule "standard reorder"
 when
-    AND(products_in_stock < 20,
-    products_in_stock >= 5)
+    products_in_stock < 20
+    margin > 0.3
 then
     order_more(50)
+    notify_purchasing()
 end
 
-rule "order new items urgent"
+rule "urgent reorder"
 when
-    products_in_stock < 5
+    products_in_stock < 5 or products_reserved > 100
 then
-    AND(order_more(10),
-    order_more(50))
+    order_more(200)
+    notify_manager()
 end
 """
 ```
@@ -104,7 +105,7 @@ params = {
 rules = """
 rule "check even number"
 when
-    is_even(number) = True
+    is_even(number) == True
 then
     print("is even")
 end
@@ -123,22 +124,23 @@ parser.execute(params)
 
 Rules with a higher priority are evaluated first. The default priority is `0`. Rules with equal priority are evaluated in the order they were added.
 
-```python
-rules = """
-rule "standard reorder" priority 5
-when
-    products_in_stock < 20
-then
-    order_more(50)
-end
+Priority can be set on the rule line or as a separate keyword:
 
+```
 rule "urgent reorder" priority 10
 when
     products_in_stock < 5
 then
     order_more(200)
 end
-"""
+
+rule "standard reorder"
+priority 5
+when
+    products_in_stock < 20
+then
+    order_more(50)
+end
 ```
 
 Priority can also be set when using `add_rule()`:
@@ -149,10 +151,9 @@ parser.add_rule("urgent reorder", "products_in_stock < 5", "order_more(200)", pr
 
 ### Description
 
-Rules can carry a human-readable description, useful for documentation and audit trails:
+Rules can carry a human-readable description:
 
-```python
-rules = """
+```
 rule "standard reorder"
 description "Triggers a standard reorder when stock falls below 20 units"
 when
@@ -160,18 +161,6 @@ when
 then
     order_more(50)
 end
-"""
-```
-
-Or via `add_rule()`:
-
-```python
-parser.add_rule(
-    "standard reorder",
-    "products_in_stock < 20",
-    "order_more(50)",
-    description="Triggers a standard reorder when stock falls below 20 units",
-)
 ```
 
 ### Enabling and disabling rules
@@ -197,7 +186,7 @@ parser.execute(params)
 
 ## Accessing execution results
 
-`execute()` returns an `ExecutionResult` object that behaves like a `bool` (for backwards compatibility) but also gives you access to the result of each rule:
+`execute()` returns an `ExecutionResult` object that behaves like a `bool` but also gives you access to the result of each rule:
 
 ```python
 from business_rule_engine import RuleParser
@@ -205,31 +194,30 @@ from business_rule_engine import RuleParser
 def order_more(items_to_order):
     return "you ordered {} new items".format(items_to_order)
 
+def notify_purchasing():
+    return "purchasing notified"
+
 rules = """
 rule "standard reorder"
 when
     products_in_stock < 20
 then
     order_more(50)
-end
-
-rule "urgent reorder" priority 10
-when
-    products_in_stock < 5
-then
-    order_more(200)
+    notify_purchasing()
 end
 """
 
 parser = RuleParser()
 parser.register_function(order_more)
+parser.register_function(notify_purchasing)
 parser.parsestr(rules)
 
-result = parser.execute({'products_in_stock': 3}, stop_on_first_trigger=False)
+result = parser.execute({'products_in_stock': 10})
 
 for r in result.results:
     if r.triggered:
         print(f"{r.rule_name}: {r.action_result}")
+        # → standard reorder: ['you ordered 50 new items', 'purchasing notified']
 ```
 
 Each entry in `result.results` is a `RuleResult` with these fields:
@@ -237,9 +225,9 @@ Each entry in `result.results` is a `RuleResult` with these fields:
 | Field | Type | Description |
 |---|---|---|
 | `rule_name` | `str` | Name of the rule |
-| `triggered` | `bool` | Whether the condition evaluated to `True` |
-| `condition_result` | `Any` | Return value of the condition expression |
-| `action_result` | `Any` | Return value of the action expression, or `None` if not triggered |
+| `triggered` | `bool` | Whether all conditions evaluated to `True` |
+| `condition_result` | `bool` | Result of the condition evaluation |
+| `action_result` | `list[Any]` | Return values of each action, or `[]` if not triggered |
 
 ## Handle missing rule parameters
 
@@ -276,9 +264,7 @@ then
 end
 """
 
-params = {
-    'products_in_stock': 10
-}
+params = {'products_in_stock': 10}
 
 parser = RuleParser()
 parser.register_function(order_more)
@@ -286,9 +272,9 @@ parser.parsestr(rules)
 
 for rule in parser:
     try:
-        rvalue_condition, rvalue_action = rule.execute(params)
+        condition_result, action_results = rule.execute(params)
         if rule.status:
-            print(rvalue_action)
+            print(action_results[0])
             break
     except MissingArgumentError:
         pass

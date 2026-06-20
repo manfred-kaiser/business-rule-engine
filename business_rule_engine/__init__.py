@@ -1,3 +1,5 @@
+__version__ = "0.2.0"
+
 import logging
 from collections import OrderedDict
 from collections.abc import Iterator

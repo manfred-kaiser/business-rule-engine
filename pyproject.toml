@@ -1,0 +1,85 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "business-rule-engine"
+dynamic = ["version"]
+authors = [
+    {name = "Manfred Kaiser", email = "manfred.kaiser@ssh-mitm.at"}
+]
+description = "Python DSL for setting up business intelligence rules"
+readme = "README.md"
+license = {file = "LICENSE"}
+keywords = ["business", "rules", "engine"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Development Status :: 4 - Beta",
+]
+requires-python = ">= 3.11"
+dependencies = [
+    "formulas",
+]
+
+[project.urls]
+Homepage = "https://github.com/manfred-kaiser/business-rule-engine"
+Source = "https://github.com/manfred-kaiser/business-rule-engine"
+Tracker = "https://github.com/manfred-kaiser/business-rule-engine/issues"
+
+[tool.hatch.version]
+path = "business_rule_engine/__init__.py"
+
+[tool.hatch.build]
+include = [
+    "business_rule_engine/**/*.py",
+]
+
+[tool.hatch.envs.lint]
+detached = false
+dependencies = [
+    "Flake8-pyproject",
+    "flake8",
+    "mypy",
+    "pytest",
+    "ruff",
+]
+
+[tool.hatch.envs.lint.scripts]
+check = [
+    "pytest",
+    "ruff check business_rule_engine",
+    "flake8 business_rule_engine",
+    "mypy business_rule_engine",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.flake8]
+ignore = ["E203", "E501", "W503"]
+max-line-length = 127
+
+[tool.mypy]
+strict = true
+install_types = true
+non_interactive = true
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "ANN401",
+    "COM812",
+    "D",
+    "E501",
+    "FBT001",
+    "FBT002",
+    "FBT003",
+    "FIX002",
+    "PLR0911",
+    "PLR0912",
+    "PLR0913",
+    "PLR2004",
+]

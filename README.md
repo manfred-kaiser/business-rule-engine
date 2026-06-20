@@ -34,7 +34,7 @@ def order_more(items_to_order):
 
 ### 3. Write the rules
 
-Rules use standard Python expression syntax. Each `when` line is a separate condition — all must be true for the rule to trigger. Each `then` line is an action executed in order.
+Rules use standard Python expression syntax. The `when` block supports multi-line expressions with `and`/`or` — lines are joined and evaluated as a single Python expression. Each `then` line is an action executed in order.
 
 ```python
 rules = """

@@ -6,17 +6,17 @@ business-rule-engine
 [![PyPI version](https://img.shields.io/pypi/v/business-rule-engine.svg?logo=pypi&logoColor=FFE873)](https://pypi.org/project/business-rule-engine/)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/business-rule-engine.svg?logo=python&logoColor=FFE873)](https://pypi.org/project/business-rule-engine/)
 [![PyPI downloads](https://pepy.tech/badge/business-rule-engine/month)](https://pepy.tech/project/business-rule-engine/month)
-[![GitHub](https://img.shields.io/github/license/manfred-kaiser/business-rule-engine.svg)](LICENSE)
+[![GitHub](https://img.shields.io/github/license/business-rule-engine.svg)](LICENSE)
 
 As a software system grows in complexity and usage, it can become burdensome if every change to the logic/behavior of the system also requires you to write and deploy new code. The goal of this business rules engine is to provide a simple interface allowing anyone to capture new rules and logic defining the behavior of a system, and a way to then process those rules on the backend.
 
-You might, for example, find this is a useful way for analysts to define marketing logic around when certain customers or items are eligible for a discount or to automate emails after users enter a certain state or go through a particular sequence of events.
+You might, for example, find this is a useful way for analysts to define marketing logic around when certain customers or items are eligible for a discount, or to automate emails after users enter a certain state or go through a particular sequence of events.
 
 ## Usage
 
-### 1. Define Your set of variables
+### 1. Define your variables
 
-Variables represent values in your system, usually the value of some particular object.  You create rules by setting threshold conditions such that when a variable is computed that triggers the condition some action is taken.
+Variables represent values in your system, usually the value of some particular object. You create rules by setting threshold conditions such that when a variable is computed that triggers the condition, some action is taken.
 
 ```python
 params = {
@@ -34,7 +34,6 @@ def order_more(items_to_order):
 
 ### 3. Write the rules
 
-
 ```python
 rules = """
 rule "order new items"
@@ -46,7 +45,7 @@ end
 """
 ```
 
-### 4. Create the parser and parse the rule
+### 4. Create the parser and execute
 
 ```python
 from business_rule_engine import RuleParser
@@ -54,17 +53,19 @@ from business_rule_engine import RuleParser
 parser = RuleParser()
 parser.register_function(order_more)
 parser.parsestr(rules)
-parser.execute(params)
+
+result = parser.execute(params)
+if result:
+    print("A rule was triggered")
 ```
 
 ## Supported functions
 
-Business rule engine uses Excel like functions (thanks to [formulas](https://github.com/vinci1it2000/formulas). So it is possible to use most of them in rules.
-
+Business rule engine uses Excel-like functions (thanks to [formulas](https://github.com/vinci1it2000/formulas)). This means you can use `AND()`, `OR()`, `NOT()`, `IF()`, `ISNUMBER()` and most other Excel functions directly in your rules.
 
 ## Multiple conditions and multiple actions
 
-You can make multiple checks on the same params, and call multiple actions as needed:
+Use `AND()` and `OR()` to combine multiple conditions, and `AND()` to call multiple action functions:
 
 ```python
 rules = """
@@ -78,9 +79,9 @@ end
 
 rule "order new items urgent"
 when
-    products_in_stock < 5,
+    products_in_stock < 5
 then
-    AND(order_more(10, true),
+    AND(order_more(10),
     order_more(50))
 end
 """
@@ -88,15 +89,13 @@ end
 
 ## Custom functions
 
-You can also write your own functions to validate conditions and use other libraries functions as actions:
+You can register your own functions to use in conditions and actions:
 
 ```python
 from business_rule_engine import RuleParser
 
 def is_even(num):
-   if (num % 2) == 0:
-      return True
-   return False
+    return (num % 2) == 0
 
 params = {
     'number': 10
@@ -116,29 +115,140 @@ parser.register_function(is_even)
 parser.register_function(print)
 parser.parsestr(rules)
 parser.execute(params)
-
 ```
 
-## Handle missing rule parameters
+## Rule options
 
-If some argruments are missing, the rule engine will raise a ValueError.
+### Priority
 
-There are some use cases, when you have to work with incomplete data. In such cases, you can define
-default arguments.
-
-You enable default rule arguments with the parameter `set_default_arg`. The default argument will have the Value `None`. To provide another value you can use `default_arg`.
+Rules with a higher priority are evaluated first. The default priority is `0`. Rules with equal priority are evaluated in the order they were added.
 
 ```python
-params = {}
-
 rules = """
-rule "order new items"
+rule "standard reorder" priority 5
+when
+    products_in_stock < 20
+then
+    order_more(50)
+end
+
+rule "urgent reorder" priority 10
+when
+    products_in_stock < 5
+then
+    order_more(200)
+end
+"""
+```
+
+Priority can also be set when using `add_rule()`:
+
+```python
+parser.add_rule("urgent reorder", "products_in_stock < 5", "order_more(200)", priority=10)
+```
+
+### Description
+
+Rules can carry a human-readable description, useful for documentation and audit trails:
+
+```python
+rules = """
+rule "standard reorder"
+description "Triggers a standard reorder when stock falls below 20 units"
 when
     products_in_stock < 20
 then
     order_more(50)
 end
 """
+```
+
+Or via `add_rule()`:
+
+```python
+parser.add_rule(
+    "standard reorder",
+    "products_in_stock < 20",
+    "order_more(50)",
+    description="Triggers a standard reorder when stock falls below 20 units",
+)
+```
+
+### Enabling and disabling rules
+
+Rules can be disabled at runtime without removing them from the parser:
+
+```python
+parser.rules["standard reorder"].enabled = False
+```
+
+Disabled rules are skipped during `execute()` and do not appear in the execution results.
+
+## Loading rules from a file
+
+Use `parsefile()` to load rules directly from a file:
+
+```python
+parser = RuleParser()
+parser.register_function(order_more)
+parser.parsefile("rules/reorder.rules")
+parser.execute(params)
+```
+
+## Accessing execution results
+
+`execute()` returns an `ExecutionResult` object that behaves like a `bool` (for backwards compatibility) but also gives you access to the result of each rule:
+
+```python
+from business_rule_engine import RuleParser
+
+def order_more(items_to_order):
+    return "you ordered {} new items".format(items_to_order)
+
+rules = """
+rule "standard reorder"
+when
+    products_in_stock < 20
+then
+    order_more(50)
+end
+
+rule "urgent reorder" priority 10
+when
+    products_in_stock < 5
+then
+    order_more(200)
+end
+"""
+
+parser = RuleParser()
+parser.register_function(order_more)
+parser.parsestr(rules)
+
+result = parser.execute({'products_in_stock': 3}, stop_on_first_trigger=False)
+
+for r in result.results:
+    if r.triggered:
+        print(f"{r.rule_name}: {r.action_result}")
+```
+
+Each entry in `result.results` is a `RuleResult` with these fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `rule_name` | `str` | Name of the rule |
+| `triggered` | `bool` | Whether the condition evaluated to `True` |
+| `condition_result` | `Any` | Return value of the condition expression |
+| `action_result` | `Any` | Return value of the action expression, or `None` if not triggered |
+
+## Handle missing rule parameters
+
+If a required argument is missing, the rule engine raises a `MissingArgumentError`.
+
+For cases where you work with incomplete data, you can provide a default value:
+
+```python
+params = {}
 
 parser = RuleParser()
 parser.register_function(order_more)
@@ -148,9 +258,7 @@ parser.execute(params, set_default_arg=True, default_arg=0)
 
 ## More control of the RuleParser
 
-if you need more control, how the rule parser handles rules, you can iterate over the parser and execute each rule in your script.
-
-This gives you more control on how to handle missing arguments, rules with errors and you have access to the return values of the conditions and the actions.
+If you need full control over rule execution, you can iterate over the parser and execute each rule individually:
 
 ```python
 from business_rule_engine import RuleParser
@@ -175,6 +283,7 @@ params = {
 parser = RuleParser()
 parser.register_function(order_more)
 parser.parsestr(rules)
+
 for rule in parser:
     try:
         rvalue_condition, rvalue_action = rule.execute(params)
@@ -185,10 +294,7 @@ for rule in parser:
         pass
 ```
 
-
 ## Error Handling
-
-Most of the errors are caused by missing parameters, you can handle the errors and interpret the results by catching `MissingArgumentError`:
 
 ```python
 from business_rule_engine import RuleParser
@@ -214,9 +320,10 @@ end
 parser = RuleParser()
 parser.register_function(order_more)
 parser.parsestr(rules)
+
 try:
-    ret = parser.execute(params)
-    if ret is False:
+    result = parser.execute(params)
+    if not result:
         print("No conditions matched")
 except MissingArgumentError as e:
     print(e)
@@ -224,10 +331,10 @@ except MissingArgumentError as e:
 
 ## Debug
 
-To debug the rules processing, use the logging lib.
+To debug the rules processing, use the logging module:
 
-You can insert in your Python script to log to stdout:
-```
+```python
+import sys
 import logging
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 ```

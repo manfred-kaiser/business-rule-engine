@@ -25,7 +25,7 @@ def test_speed():
 
     start_time = time.time()
     for params in params_list:
-        assert parser.execute(params) is True
+        assert parser.execute(params)
     execution_time = time.time() - start_time
 
     print(f"Execution time: {execution_time:.3f} seconds")

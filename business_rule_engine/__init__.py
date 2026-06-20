@@ -1,10 +1,13 @@
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 import logging
+import re
 from collections.abc import Iterator
-import formulas  # type: ignore
-
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
+
+import formulas  # type: ignore
 
 from business_rule_engine.exceptions import (
     DuplicateRuleName,
@@ -14,11 +17,37 @@ from business_rule_engine.exceptions import (
 )
 
 
+@dataclass
+class RuleResult:
+    rule_name: str
+    triggered: bool
+    condition_result: Any
+    action_result: Any
+
+
+class ExecutionResult:
+    def __init__(self, results: list[RuleResult]) -> None:
+        self.results = results
+
+    def __bool__(self) -> bool:
+        return any(r.triggered for r in self.results)
+
+
 class Rule():
 
-    def __init__(self, rulename: str, condition_requires_bool: bool = True) -> None:
+    def __init__(
+        self,
+        rulename: str,
+        condition_requires_bool: bool = True,
+        priority: int = 0,
+        enabled: bool = True,
+        description: str = "",
+    ) -> None:
         self.condition_requires_bool = condition_requires_bool
         self.rulename: str = rulename
+        self.priority: int = priority
+        self.enabled: bool = enabled
+        self.description: str = description
         self.conditions: list[str] = []
         self.actions: list[str] = []
         self.status: bool | None = None
@@ -80,6 +109,9 @@ class RuleParser():
 
     CUSTOM_FUNCTIONS: list[str] = []
 
+    _RULE_PATTERN = re.compile(r'^rule\s+"([^"]+)"(?:\s+priority\s+(-?\d+))?', re.IGNORECASE)
+    _DESCRIPTION_PATTERN = re.compile(r'^description\s+"([^"]*)"', re.IGNORECASE)
+
     def __init__(self, condition_requires_bool: bool = True) -> None:
         self.rules: dict[str, Rule] = {}
         self.condition_requires_bool = condition_requires_bool
@@ -94,26 +126,36 @@ class RuleParser():
         for line in text.split('\n'):
             ignore_line = False
             line = line.strip()
-            if line.lower().startswith('rule'):
+
+            rule_match = self._RULE_PATTERN.match(line)
+            if rule_match:
                 is_condition = False
                 is_action = False
                 is_then = False
-                rulename = line.split(' ', 1)[1].strip("\"")
+                rulename = rule_match.group(1)
+                priority = int(rule_match.group(2)) if rule_match.group(2) else 0
                 if rulename in self.rules:
                     raise DuplicateRuleName("Rule '{}' already exists!".format(rulename))
-                self.rules[rulename] = Rule(rulename)
-            if line.lower().strip().startswith('when'):
+                self.rules[rulename] = Rule(rulename, condition_requires_bool=self.condition_requires_bool, priority=priority)
+                ignore_line = True
+
+            desc_match = self._DESCRIPTION_PATTERN.match(line)
+            if desc_match and rulename and not is_condition and not is_action:
+                self.rules[rulename].description = desc_match.group(1)
+                ignore_line = True
+
+            if line.lower().startswith('when'):
                 ignore_line = True
                 is_condition = True
                 is_action = False
-            if line.lower().strip().startswith('then'):
+            if line.lower().startswith('then'):
                 if is_then:
                     raise RuleParserSyntaxError('using multiple "then" in one rule is not allowed')
                 is_then = True
                 ignore_line = True
                 is_condition = False
                 is_action = True
-            if line.lower().strip().startswith('end'):
+            if line.lower().startswith('end'):
                 ignore_line = True
                 is_condition = False
                 is_action = False
@@ -123,10 +165,14 @@ class RuleParser():
             if rulename and is_action and not ignore_line:
                 self.rules[rulename].actions.append(line.strip())
 
-    def add_rule(self, rulename: str, condition: str, action: str) -> None:
+    def parsefile(self, filepath: str | Path) -> None:
+        with open(filepath, encoding="utf-8") as f:
+            self.parsestr(f.read())
+
+    def add_rule(self, rulename: str, condition: str, action: str, priority: int = 0, enabled: bool = True, description: str = "") -> None:
         if rulename in self.rules:
             raise DuplicateRuleName("Rule '{}' already exists!".format(rulename))
-        rule = Rule(rulename)
+        rule = Rule(rulename, condition_requires_bool=self.condition_requires_bool, priority=priority, enabled=enabled, description=description)
         rule.conditions.append(condition)
         rule.actions.append(action)
         self.rules[rulename] = rule
@@ -138,8 +184,8 @@ class RuleParser():
             cls.CUSTOM_FUNCTIONS.append(custom_function_name.upper())
             formulas.get_functions()[custom_function_name.upper()] = function  # type: ignore
 
-    def __iter__(self) -> Iterator:
-        return self.rules.values().__iter__()
+    def __iter__(self) -> Iterator[Rule]:
+        return iter(self.rules.values())
 
     def execute(
         self,
@@ -148,19 +194,31 @@ class RuleParser():
         *,
         set_default_arg: bool = False,
         default_arg: Any = None
-    ) -> bool:
-        rule_was_triggered = False
-        for rule in self:
+    ) -> ExecutionResult:
+        results: list[RuleResult] = []
+        sorted_rules = sorted(self.rules.values(), key=lambda r: r.priority, reverse=True)
+
+        for rule in sorted_rules:
+            if not rule.enabled:
+                continue
+
             logging.debug("Rule name: %s", rule.rulename)
             logging.debug("Condition: %s", "".join(rule.conditions))
             logging.debug("Action: %s", "".join(rule.actions))
 
             rvalue_condition, rvalue_action = rule.execute(params, set_default_arg=set_default_arg, default_arg=default_arg)
 
+            results.append(RuleResult(
+                rule_name=rule.rulename,
+                triggered=bool(rule.status),
+                condition_result=rvalue_condition,
+                action_result=rvalue_action,
+            ))
+
             if rule.status:
-                rule_was_triggered = True
                 if stop_on_first_trigger:
                     logging.debug("Stop on first trigger")
                     break
                 logging.debug("continue with next rule")
-        return rule_was_triggered
+
+        return ExecutionResult(results)

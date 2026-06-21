@@ -68,19 +68,16 @@ strict = true
 install_types = true
 non_interactive = true
 
+[[tool.mypy.overrides]]
+module = "simpleeval"
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 127
+
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-    "ANN401",
-    "COM812",
     "D",
-    "E501",
-    "FBT001",
-    "FBT002",
-    "FBT003",
-    "FIX002",
-    "PLR0911",
-    "PLR0912",
     "PLR0913",
-    "PLR2004",
 ]

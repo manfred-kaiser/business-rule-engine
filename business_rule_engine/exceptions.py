@@ -1,18 +1,25 @@
-class RuleParserException(Exception):
+class RuleParserError(Exception):
     pass
 
 
-class RuleParserSyntaxError(RuleParserException):
+class RuleParserSyntaxError(RuleParserError):
     pass
 
 
-class DuplicateRuleName(RuleParserException):
+class DuplicateThenError(RuleParserSyntaxError):
+    def __init__(self) -> None:
+        super().__init__('using multiple "then" in one rule is not allowed')
+
+
+class DuplicateRuleNameError(RuleParserError):
+    def __init__(self, rulename: str) -> None:
+        super().__init__(f"Rule '{rulename}' already exists!")
+
+
+class MissingArgumentError(RuleParserError):
     pass
 
 
-class MissingArgumentError(RuleParserException):
-    pass
-
-
-class ConditionReturnValueError(RuleParserException):
-    pass
+class ConditionReturnValueError(RuleParserError):
+    def __init__(self, rulename: str) -> None:
+        super().__init__(f"rule: {rulename} - condition does not return a boolean value!")

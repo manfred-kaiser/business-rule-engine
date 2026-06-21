@@ -7,36 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
 
-- License changed from GPL v3 to MIT
-
-## [1.0.0] - 2026-06-20
+## [1.0.0] - 2026-06-21
 
 ### Breaking Changes
 
 - Replaced `formulas` with `simpleeval`: rule expressions now use Python syntax (`and`/`or`/`not`/`==`) instead of Excel syntax (`AND()`/`OR()`/`=`)
-- Multiple `when` lines are now evaluated with implicit AND — each line is a separate condition, all must be true
-- Multiple `then` lines are now executed sequentially — `action_result` in `RuleResult` is `list[Any]` instead of `Any`
-- `Rule.execute()` now returns `tuple[bool, list[Any]]` instead of `tuple[Any, Any]`
-- `RuleParser.CUSTOM_FUNCTIONS` is now `dict[str, Any]` (name → function) instead of `list[str]`
+- Multiple `when` lines are concatenated into a single Python expression — logical operators (`and`/`or`) must be written explicitly
+- Multiple `then` lines are now executed sequentially — `action_result` in `RuleResult` is `list[object]` instead of a single value
+- `Rule.execute()` now returns `tuple[bool, list[object]]` instead of `tuple[Any, Any]`
+- `RuleParser.CUSTOM_FUNCTIONS` is now a class-level `dict[str, Callable]` (name → callable) instead of a `list[str]`
+- Exception renames: `RuleParserException` → `RuleParserError`, `DuplicateRuleName` → `DuplicateRuleNameError`
+- All boolean and optional parameters are now keyword-only (e.g. `parser.execute(params, stop_on_first_trigger=False)`)
+- Package restructured into separate modules (`exceptions`, `results`, `rule`, `parser`) — top-level imports via `business_rule_engine` still work
+- Minimum Python version raised to 3.11
 
 ### Added
 
+- New exception `DuplicateThenError` (subclass of `RuleParserSyntaxError`) when a rule block contains more than one `then` section
+- `RuleResult` dataclass with fields `rule_name`, `triggered`, `condition_result`, `action_result`
+- `ExecutionResult` class with `.results` list and `bool` coercion (True if at least one rule triggered)
+- `Rule.description` and `Rule.enabled` attributes for runtime rule control
+- `py.typed` marker file for PEP 561 compliance
+- License changed from GPL v3 to MIT
 - PyPI publishing via Trusted Publisher (OIDC) — no more token secrets required
 
 ### Changed
 
 - Migrated build system from `setup.py` to `pyproject.toml` with hatchling
-- Minimum Python version raised to 3.11; CI matrix now covers 3.11, 3.12, 3.13
-- Replaced deprecated `typing.Dict`, `List`, `Text`, `Tuple`, `Optional` with built-in types (`dict`, `list`, `str`, `tuple`, `X | None`)
+- CI matrix now covers Python 3.11, 3.12, 3.13
+- Replaced deprecated `typing.Dict`, `List`, `Text`, `Tuple`, `Optional` with built-in generics and `X | None`
 - Replaced `OrderedDict` with plain `dict` (ordered since Python 3.7)
-- `test_speed.py` now runs as a proper pytest test function instead of at import time
 
 ### Fixed
 
-- Parser bug: `is_then` was not reset when a new `rule` block started, causing a false `RuleParserSyntaxError` if a preceding rule was missing its `end` keyword
-- Typo `rvalue_conditon` → `rvalue_condition` in `RuleParser.execute()`
+- Parser bug: `is_then` was not reset when a new `rule` block started, causing a spurious `RuleParserSyntaxError` if a preceding rule was missing its `end` keyword
 - `register_function` no longer registers the same function multiple times when called repeatedly across instances
 
 

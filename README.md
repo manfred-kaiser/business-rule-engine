@@ -117,6 +117,13 @@ parser.parsestr(rules)
 parser.execute(params)
 ```
 
+You can also register a function under a different name for use in rules:
+
+```python
+parser.register_function(is_even, "even")  # use as even(number) in rules
+```
+```
+
 ## Rule options
 
 ### Priority
@@ -162,6 +169,20 @@ then
 end
 ```
 
+### Allowing non-boolean conditions
+
+By default, the parser raises `ConditionReturnValueError` if a `when` expression does not evaluate to a `bool`. Set `condition_requires_bool=False` to accept any truthy/falsy value instead:
+
+```python
+parser = RuleParser(condition_requires_bool=False)
+```
+
+This can also be set per rule:
+
+```python
+rule = Rule("my rule", condition_requires_bool=False)
+```
+
 ### Enabling and disabling rules
 
 Rules can be disabled at runtime without removing them from the parser:
@@ -171,6 +192,20 @@ parser.rules["standard reorder"].enabled = False
 ```
 
 Disabled rules are skipped during `execute()` and do not appear in the execution results.
+
+## Processing all matching rules
+
+By default, `execute()` stops after the first rule whose condition is satisfied (`stop_on_first_trigger=True`). Set it to `False` to evaluate every enabled rule regardless:
+
+```python
+result = parser.execute(params, stop_on_first_trigger=False)
+
+for r in result.results:
+    if r.triggered:
+        print(f"{r.rule_name}: {r.action_result}")
+```
+
+This is useful when multiple independent rules may apply to the same input.
 
 ## Loading rules from a file
 

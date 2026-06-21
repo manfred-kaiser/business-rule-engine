@@ -1,0 +1,8 @@
+rule "order new items"
+description "Reorder only when both stock is low and margin is sufficient"
+when
+    products_in_stock < 20
+    and margin > 0.3
+then
+    order_more(50)
+end

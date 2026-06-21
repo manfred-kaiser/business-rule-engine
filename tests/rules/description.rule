@@ -1,0 +1,7 @@
+rule "order new items"
+description "Orders new items when stock is low"
+when
+    products_in_stock < 20
+then
+    order_more(50)
+end

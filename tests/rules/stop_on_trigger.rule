@@ -1,0 +1,15 @@
+rule "rule A" priority 10
+description "Higher-priority rule — evaluated first"
+when
+    x > 0
+then
+    1
+end
+
+rule "rule B"
+description "Lower-priority rule — skipped when stop_on_first_trigger=True (default)"
+when
+    x > 0
+then
+    2
+end

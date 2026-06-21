@@ -1,0 +1,7 @@
+rule "order new items"
+description "Triggers a reorder when stock falls below 20 units"
+when
+    products_in_stock < 20
+then
+    order_more(50)
+end

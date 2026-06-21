@@ -1,0 +1,8 @@
+rule "order new items"
+priority 5
+description "Priority declared on its own line"
+when
+    products_in_stock < 20
+then
+    order_more(50)
+end

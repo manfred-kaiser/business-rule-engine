@@ -1,0 +1,7 @@
+rule "inline or"
+description "Triggers when stock is critically low OR category is flagged as priority"
+when
+    products_in_stock < 5 or category == "priority"
+then
+    order_more(100)
+end

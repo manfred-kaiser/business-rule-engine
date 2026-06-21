@@ -1,0 +1,8 @@
+rule "multi action"
+description "Executes multiple actions in sequence when triggered"
+when
+    trigger == True
+then
+    action_a()
+    action_b()
+end

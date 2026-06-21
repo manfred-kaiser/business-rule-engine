@@ -1,0 +1,15 @@
+rule "low priority"
+description "Standard reorder — runs only if no higher-priority rule triggered first"
+when
+    products_in_stock < 20
+then
+    order_more(10)
+end
+
+rule "high priority" priority 10
+description "Urgent reorder — evaluated before the standard rule"
+when
+    products_in_stock < 20
+then
+    order_more(50)
+end

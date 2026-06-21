@@ -353,3 +353,28 @@ def test_contains_parser(rules_dir):
     parser.parsefile(rules_dir / "order_items.rule")
     assert "order new items" in parser
     assert "nonexistent rule" not in parser
+
+
+def test_remove_rule(rules_dir):
+    parser = RuleParser()
+    parser.parsefile(rules_dir / "order_items.rule")
+    assert "order new items" in parser
+    parser.remove_rule("order new items")
+    assert "order new items" not in parser
+    assert len(parser) == 0
+
+
+def test_remove_rule_missing():
+    parser = RuleParser()
+    with pytest.raises(KeyError):
+        parser.remove_rule("nonexistent rule")
+
+
+def test_clear_rules(rules_dir):
+    parser = RuleParser()
+    parser.parsefile(rules_dir / "priority.rule")
+    assert len(parser) == 2
+    parser.clear_rules()
+    assert len(parser) == 0
+    result = parser.execute({'products_in_stock': 5})
+    assert not result

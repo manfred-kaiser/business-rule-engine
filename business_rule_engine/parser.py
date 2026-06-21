@@ -179,6 +179,18 @@ class RuleParser:
         name = function_name or function.__name__
         cls.CUSTOM_FUNCTIONS[name] = function
 
+    def remove_rule(self, rulename: str) -> None:
+        """Remove a registered rule by name.
+
+        :param rulename: Name of the rule to remove.
+        :raises KeyError: If no rule with *rulename* is registered.
+        """
+        del self.rules[rulename]
+
+    def clear_rules(self) -> None:
+        """Remove all registered rules from this parser instance."""
+        self.rules.clear()
+
     def __len__(self) -> int:
         """Return the number of registered rules."""
         return len(self.rules)

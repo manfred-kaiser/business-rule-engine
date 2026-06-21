@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `RuleParser.__len__()`: `len(parser)` returns the number of registered rules
 - `RuleParser.__contains__()`: `"name" in parser` checks whether a rule is registered
+- `RuleParser.remove_rule(rulename)`: remove a single rule by name; raises `KeyError` if not found
+- `RuleParser.clear_rules()`: remove all rules from a parser instance
 
 
 ## [1.0.0] - 2026-06-21

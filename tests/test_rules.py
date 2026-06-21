@@ -378,3 +378,28 @@ def test_clear_rules(rules_dir):
     assert len(parser) == 0
     result = parser.execute({'products_in_stock': 5})
     assert not result
+
+
+# --- function management ---
+
+
+def test_unregister_function():
+    RuleParser.register_function(order_more)
+    assert "order_more" in RuleParser.CUSTOM_FUNCTIONS
+    RuleParser.unregister_function("order_more")
+    assert "order_more" not in RuleParser.CUSTOM_FUNCTIONS
+
+
+def test_unregister_function_missing():
+    with pytest.raises(KeyError):
+        RuleParser.unregister_function("nonexistent_fn")
+
+
+def test_clear_functions():
+    RuleParser.register_function(order_more)
+    RuleParser.clear_functions()
+    assert len(RuleParser.CUSTOM_FUNCTIONS) == 0
+
+
+def test_clear_functions_isolates_between_tests():
+    assert "order_more" not in RuleParser.CUSTOM_FUNCTIONS

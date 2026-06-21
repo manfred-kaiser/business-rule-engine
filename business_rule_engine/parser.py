@@ -179,6 +179,20 @@ class RuleParser:
         name = function_name or function.__name__
         cls.CUSTOM_FUNCTIONS[name] = function
 
+    @classmethod
+    def unregister_function(cls, function_name: str) -> None:
+        """Remove a previously registered callable from rule expressions.
+
+        :param function_name: Name under which the function was registered.
+        :raises KeyError: If no function with *function_name* is registered.
+        """
+        del cls.CUSTOM_FUNCTIONS[function_name]
+
+    @classmethod
+    def clear_functions(cls) -> None:
+        """Remove all registered custom functions."""
+        cls.CUSTOM_FUNCTIONS.clear()
+
     def remove_rule(self, rulename: str) -> None:
         """Remove a registered rule by name.
 

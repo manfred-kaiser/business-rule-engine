@@ -1,3 +1,5 @@
+"""Single rule: condition evaluation and action execution."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -15,14 +17,22 @@ if TYPE_CHECKING:
 
 class _DefaultNames(dict[str, object]):
     def __init__(self, data: dict[str, object], default: object) -> None:
+        """Initialize with data and a fallback value for missing keys."""
         super().__init__(data)
         self._default = default
 
     def __missing__(self, key: str) -> object:
+        """Return the default value for any missing key."""
         return self._default
 
 
 class Rule:
+    """Represent a single named business rule with a condition and one or more actions.
+
+    A rule is satisfied when its condition expression evaluates to ``True``.
+    When satisfied, all registered action expressions are executed in order.
+    """
+
     def __init__(
         self,
         rulename: str,
@@ -33,6 +43,16 @@ class Rule:
         description: str = "",
         functions: dict[str, Callable[..., object]] | None = None,
     ) -> None:
+        """Initialize a rule.
+
+        :param rulename: Unique name identifying the rule.
+        :param condition_requires_bool: Raise :exc:`~business_rule_engine.ConditionReturnValueError`
+            when the condition does not return a boolean value.
+        :param priority: Execution priority; higher values are evaluated first.
+        :param enabled: Whether this rule participates in execution.
+        :param description: Human-readable description of the rule.
+        :param functions: Mapping of callables available inside rule expressions.
+        """
         self.rulename = rulename
         self.condition_requires_bool = condition_requires_bool
         self.priority = priority
@@ -58,6 +78,15 @@ class Rule:
         set_default_arg: bool = False,
         default_arg: object = None,
     ) -> bool:
+        """Evaluate the rule condition against the provided parameters.
+
+        :param params: Named values available to the condition expression.
+        :param set_default_arg: Substitute *default_arg* for missing keys instead of raising.
+        :param default_arg: Value used for missing keys when *set_default_arg* is ``True``.
+        :returns: ``True`` if the condition is satisfied.
+        :raises MissingArgumentError: If a referenced name is absent and *set_default_arg* is ``False``.
+        :raises ConditionReturnValueError: If the condition does not return a boolean value.
+        """
         names = self._build_names(params, set_default_arg=set_default_arg, default_arg=default_arg)
         condition = " ".join(self.conditions)
         try:
@@ -76,6 +105,14 @@ class Rule:
         set_default_arg: bool = False,
         default_arg: object = None,
     ) -> list[object]:
+        """Execute all registered action expressions and return their results.
+
+        :param params: Named values available to each action expression.
+        :param set_default_arg: Substitute *default_arg* for missing keys instead of raising.
+        :param default_arg: Value used for missing keys when *set_default_arg* is ``True``.
+        :returns: List of return values, one per action expression, in order.
+        :raises MissingArgumentError: If a referenced name is absent and *set_default_arg* is ``False``.
+        """
         names = self._build_names(params, set_default_arg=set_default_arg, default_arg=default_arg)
         results: list[object] = []
         for action in self.actions:
@@ -93,6 +130,16 @@ class Rule:
         set_default_arg: bool = False,
         default_arg: object = None,
     ) -> tuple[bool, list[object]]:
+        """Evaluate the condition and, if satisfied, execute all actions.
+
+        :param params: Named values available to condition and action expressions.
+        :param set_default_arg: Substitute *default_arg* for missing keys instead of raising.
+        :param default_arg: Value used for missing keys when *set_default_arg* is ``True``.
+        :returns: A tuple of ``(condition_result, action_results)``.
+            The action list is empty when the condition is not satisfied.
+        :raises MissingArgumentError: If a referenced name is absent and *set_default_arg* is ``False``.
+        :raises ConditionReturnValueError: If the condition does not return a boolean value.
+        """
         condition_result = self.check_condition(params, set_default_arg=set_default_arg, default_arg=default_arg)
         if not self.status:
             return condition_result, []

@@ -1,3 +1,5 @@
+"""Business rule engine — evaluate named rules against runtime parameters."""
+
 __version__ = "1.0.0"
 
 from business_rule_engine.exceptions import (

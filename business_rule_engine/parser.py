@@ -1,3 +1,5 @@
+"""Parser for the business rule DSL."""
+
 from __future__ import annotations
 
 import logging
@@ -19,14 +21,34 @@ logger = logging.getLogger(__name__)
 
 
 class RuleParser:
+    """Parse and execute a collection of business rules.
+
+    Rules are loaded from the DSL text format or added programmatically via
+    :meth:`add_rule`.  On execution, enabled rules are evaluated in descending
+    priority order.
+
+    Example DSL::
+
+        rule "reorder"
+        when
+            stock < 10
+        then
+            order(50)
+        end
+    """
 
     CUSTOM_FUNCTIONS: ClassVar[dict[str, Callable[..., object]]] = {}
+    """Callables registered via :meth:`register_function` and shared across all instances."""
 
     _RULE_PATTERN = re.compile(r'^rule\s+"([^"]+)"(?:\s+priority\s+(-?\d+))?', re.IGNORECASE)
     _DESCRIPTION_PATTERN = re.compile(r'^description\s+"([^"]*)"', re.IGNORECASE)
     _PRIORITY_PATTERN = re.compile(r"^priority\s+(-?\d+)$", re.IGNORECASE)
 
     def __init__(self, *, condition_requires_bool: bool = True) -> None:
+        """Initialize the rule parser.
+
+        :param condition_requires_bool: Require all rule conditions to return a boolean value.
+        """
         self.rules: dict[str, Rule] = {}
         self.condition_requires_bool = condition_requires_bool
 
@@ -72,6 +94,12 @@ class RuleParser:
         return None
 
     def parsestr(self, text: str) -> None:
+        """Parse rules from a DSL string and add them to the parser.
+
+        :param text: DSL text containing one or more rule definitions.
+        :raises DuplicateRuleNameError: If a rule name appears more than once.
+        :raises DuplicateThenError: If a rule block contains more than one ``then`` section.
+        """
         rulename: str | None = None
         is_condition: bool = False
         is_action: bool = False
@@ -103,6 +131,12 @@ class RuleParser:
                 self.rules[rulename].actions.append(line)
 
     def parsefile(self, filepath: str | Path) -> None:
+        """Parse rules from a DSL file and add them to the parser.
+
+        :param filepath: Path to the file containing rule definitions.
+        :raises DuplicateRuleNameError: If a rule name appears more than once.
+        :raises DuplicateThenError: If a rule block contains more than one ``then`` section.
+        """
         with Path(filepath).open(encoding="utf-8") as f:
             self.parsestr(f.read())
 
@@ -116,6 +150,16 @@ class RuleParser:
         enabled: bool = True,
         description: str = "",
     ) -> None:
+        """Register a rule programmatically without parsing DSL text.
+
+        :param rulename: Unique name for the rule.
+        :param condition: Expression evaluated as the rule condition.
+        :param action: Expression executed when the condition is satisfied.
+        :param priority: Execution priority; higher values run first.
+        :param enabled: Whether the rule participates in execution.
+        :param description: Human-readable description of the rule.
+        :raises DuplicateRuleNameError: If *rulename* is already registered.
+        """
         if rulename in self.rules:
             raise DuplicateRuleNameError(rulename)
         rule = self._make_rule(rulename, priority)
@@ -127,10 +171,16 @@ class RuleParser:
 
     @classmethod
     def register_function(cls, function: Callable[..., object], function_name: str | None = None) -> None:
+        """Register a callable for use inside rule expressions.
+
+        :param function: Callable to make available in expressions.
+        :param function_name: Name to use inside expressions; defaults to ``function.__name__``.
+        """
         name = function_name or function.__name__
         cls.CUSTOM_FUNCTIONS[name] = function
 
     def __iter__(self) -> Iterator[Rule]:
+        """Iterate over registered rules in insertion order."""
         return iter(self.rules.values())
 
     def execute(
@@ -141,6 +191,19 @@ class RuleParser:
         set_default_arg: bool = False,
         default_arg: object = None,
     ) -> ExecutionResult:
+        """Evaluate all enabled rules against the given parameters.
+
+        Rules are sorted by descending priority before evaluation.
+
+        :param params: Named values available to all rule expressions.
+        :param stop_on_first_trigger: Stop after the first rule whose condition is satisfied.
+        :param set_default_arg: Substitute *default_arg* for missing keys instead of raising.
+        :param default_arg: Value used for missing keys when *set_default_arg* is ``True``.
+        :returns: :class:`~business_rule_engine.ExecutionResult` containing per-rule results.
+            Evaluates as ``True`` when at least one rule was triggered.
+        :raises MissingArgumentError: If a referenced name is absent and *set_default_arg* is ``False``.
+        :raises ConditionReturnValueError: If a condition does not return a boolean value.
+        """
         results: list[RuleResult] = []
         sorted_rules = sorted(self.rules.values(), key=lambda r: r.priority, reverse=True)
 

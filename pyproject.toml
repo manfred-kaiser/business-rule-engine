@@ -36,6 +36,7 @@ path = "business_rule_engine/__init__.py"
 [tool.hatch.build]
 include = [
     "business_rule_engine/**/*.py",
+    "business_rule_engine/py.typed",
 ]
 
 [tool.hatch.envs.lint]
@@ -78,6 +79,5 @@ line-length = 127
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-    "D",
     "PLR0913",
 ]

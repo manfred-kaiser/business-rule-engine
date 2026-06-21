@@ -193,6 +193,33 @@ parser.rules["standard reorder"].enabled = False
 
 Disabled rules are skipped during `execute()` and do not appear in the execution results.
 
+### Removing and counting rules
+
+Check whether a rule exists and how many rules are loaded:
+
+```python
+"standard reorder" in parser  # True / False
+len(parser)                    # number of registered rules
+```
+
+Remove a single rule or all rules at once:
+
+```python
+parser.remove_rule("standard reorder")  # raises KeyError if not found
+parser.clear_rules()                    # removes all rules
+```
+
+### Managing custom functions
+
+Remove a previously registered function or clear all of them:
+
+```python
+RuleParser.unregister_function("order_more")  # raises KeyError if not found
+RuleParser.clear_functions()                  # removes all custom functions
+```
+
+Note: `CUSTOM_FUNCTIONS` is shared across all parser instances, so `clear_functions()` affects every instance.
+
 ## Processing all matching rules
 
 By default, `execute()` stops after the first rule whose condition is satisfied (`stop_on_first_trigger=True`). Set it to `False` to evaluate every enabled rule regardless:

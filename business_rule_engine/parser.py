@@ -179,6 +179,14 @@ class RuleParser:
         name = function_name or function.__name__
         cls.CUSTOM_FUNCTIONS[name] = function
 
+    def __len__(self) -> int:
+        """Return the number of registered rules."""
+        return len(self.rules)
+
+    def __contains__(self, rulename: object) -> bool:
+        """Return ``True`` if a rule with the given name is registered."""
+        return rulename in self.rules
+
     def __iter__(self) -> Iterator[Rule]:
         """Iterate over registered rules in insertion order."""
         return iter(self.rules.values())

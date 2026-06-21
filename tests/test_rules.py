@@ -334,3 +334,22 @@ def test_register_function_with_custom_name():
     parser.add_rule("test", "x > 0", "times_two(x)")
     result = parser.execute({'x': 5})
     assert result.results[0].action_result == [10]
+
+
+# --- rule management ---
+
+
+def test_len_parser(rules_dir):
+    parser = RuleParser()
+    assert len(parser) == 0
+    parser.parsefile(rules_dir / "order_items.rule")
+    assert len(parser) == 1
+    parser.parsefile(rules_dir / "stop_on_trigger.rule")
+    assert len(parser) == 3
+
+
+def test_contains_parser(rules_dir):
+    parser = RuleParser()
+    parser.parsefile(rules_dir / "order_items.rule")
+    assert "order new items" in parser
+    assert "nonexistent rule" not in parser

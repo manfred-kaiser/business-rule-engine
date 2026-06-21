@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `RuleParser.__len__()`: `len(parser)` returns the number of registered rules
+- `RuleParser.__contains__()`: `"name" in parser` checks whether a rule is registered
+
 
 ## [1.0.0] - 2026-06-21
 

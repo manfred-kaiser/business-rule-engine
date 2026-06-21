@@ -226,7 +226,7 @@ Each entry in `result.results` is a `RuleResult` with these fields:
 | `rule_name` | `str` | Name of the rule |
 | `triggered` | `bool` | Whether all conditions evaluated to `True` |
 | `condition_result` | `bool` | Result of the condition evaluation |
-| `action_result` | `list[Any]` | Return values of each action, or `[]` if not triggered |
+| `action_result` | `list[object]` | Return values of each action, or `[]` if not triggered |
 
 ## Handle missing rule parameters
 
@@ -323,3 +323,97 @@ import sys
 import logging
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 ```
+
+---
+
+## Migration Guide
+
+### From 0.x to 1.x
+
+Version 1.0 is a major rewrite with several breaking changes.
+
+#### Rule expression syntax
+
+Rules no longer use Excel-style syntax. All expressions are plain Python:
+
+| 0.x (Excel syntax) | 1.x (Python syntax) |
+|---|---|
+| `AND(a, b)` | `a and b` |
+| `OR(a, b)` | `a or b` |
+| `NOT(a)` | `not a` |
+| `a = b` | `a == b` |
+
+#### Multiple `when` lines
+
+Multiple `when` lines are no longer treated as independent conditions joined with AND.
+They are concatenated into a single Python expression, so you must write the operators explicitly:
+
+```
+# 0.x — implicit AND between lines
+when
+    products_in_stock < 20
+    margin > 0.3
+
+# 1.x — explicit operator required
+when
+    products_in_stock < 20
+    and margin > 0.3
+```
+
+#### `action_result` is now a list
+
+Each `then` line is a separate action. `action_result` is now `list[object]` instead of a single value:
+
+```python
+# 0.x
+condition_result, action_result = rule.execute(params)
+print(action_result)          # single value
+
+# 1.x
+condition_result, action_results = rule.execute(params)
+print(action_results[0])      # first action result
+print(action_results)         # all action results
+```
+
+#### Renamed and restructured exceptions
+
+The exception base class and one exception were renamed for consistency with Python naming conventions:
+
+| 0.x | 1.x |
+|---|---|
+| `RuleParserException` | `RuleParserError` |
+| `DuplicateRuleName` | `DuplicateRuleNameError` |
+
+A new exception `DuplicateThenError` (subclass of `RuleParserSyntaxError`) is raised when a rule block contains more than one `then` section.
+
+#### Boolean parameters are now keyword-only
+
+All boolean and optional parameters must be passed as keyword arguments:
+
+```python
+# 0.x
+parser = RuleParser(False)
+rule = Rule("name", False, 10, False)
+parser.execute(params, False)
+
+# 1.x
+parser = RuleParser(condition_requires_bool=False)
+rule = Rule("name", condition_requires_bool=False, priority=10, enabled=False)
+parser.execute(params, stop_on_first_trigger=False)
+```
+
+This also applies to `add_rule()`:
+
+```python
+# 0.x
+parser.add_rule("name", "cond", "action", 10, False, "desc")
+
+# 1.x
+parser.add_rule("name", "cond", "action", priority=10, enabled=False, description="desc")
+```
+
+#### `CUSTOM_FUNCTIONS` is now a class-level dict
+
+In 0.x, functions were registered as a list of strings. In 1.x, `CUSTOM_FUNCTIONS` is a
+`dict[str, Callable]` (name → callable) and is shared across all parser instances.
+Use `register_function()` to add functions — do not modify `CUSTOM_FUNCTIONS` directly.
